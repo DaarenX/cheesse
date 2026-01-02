@@ -9,10 +9,10 @@ androidx-core = "1.17.0"
 androidx-espresso = "3.7.0"
 androidx-lifecycle = "2.9.5"
 androidx-testExt = "1.3.0"
-composeHotReload = "1.0.0-rc02"
+composeHotReload = "1.0.0"
 composeMultiplatform = "1.9.1"
 junit = "4.13.2"
-kotlin = "2.2.20"
+kotlin = "2.2.21"
 kotlinx-coroutines = "1.10.2"
 logback = "1.5.20"
 voyager = "1.1.0-beta02"
@@ -21,6 +21,7 @@ spring-dependency-management = "1.1.7"
 spring = "4.0.1"
 chesslib = "1.0.1"
 jackson = "3.0.3"
+ktlint = "14.0.1"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -56,3 +57,4 @@ kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
 spring-boot = { id  = "org.springframework.boot", version.ref = "spring" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }

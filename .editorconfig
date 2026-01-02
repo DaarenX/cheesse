@@ -1,0 +1,9 @@
+root = true
+
+[*]
+ktlint_function_naming_ignore_when_annotated_with=Composable
+
+[**/{generated,build}/**]
+generated_code = true
+ij_formatter_enabled = false
+ktlint = disabled

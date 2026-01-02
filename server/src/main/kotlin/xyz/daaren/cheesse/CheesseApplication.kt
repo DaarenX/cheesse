@@ -15,9 +15,6 @@ fun main(args: Array<String>) {
 
 @RestController
 class DummyController {
-
     @GetMapping("/")
-    fun hello(): String {
-        return "Spring Boot: ${Greeting().greet()}"
-    }
+    fun hello(): String = "Spring Boot: ${Greeting().greet()}"
 }

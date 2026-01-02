@@ -17,10 +17,11 @@ The project is divided into three main modules:
 - handle game result
 - show current player
 - rotate board so white is at the bottom / board rotation in general
+- application icon
 
 ### Server
 - basic spring boot setup
 
 ### Misc
-- ktlint
+- github actions
 - github pages

@@ -6,7 +6,7 @@ import io.github.alluhemanth.chess.core.move.Move
 import io.github.alluhemanth.chess.core.piece.Piece
 import kotlinx.coroutines.flow.StateFlow
 
-interface GameScreenModelApi: ScreenModel {
+interface GameScreenModelApi : ScreenModel {
     val gameState: StateFlow<GameState>
 
     fun makeMove(move: Move)
