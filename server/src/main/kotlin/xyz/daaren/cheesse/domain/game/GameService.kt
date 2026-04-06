@@ -2,6 +2,8 @@ package xyz.daaren.cheesse.domain.game
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import xyz.daaren.cheesse.api.GameColorPreference
+import xyz.daaren.cheesse.api.PlayerColor
 import xyz.daaren.cheesse.persistence.game.GameEntity
 import xyz.daaren.cheesse.persistence.game.GameRepository
 import xyz.daaren.cheesse.persistence.game.toDomainModel

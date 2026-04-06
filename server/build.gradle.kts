@@ -1,8 +1,8 @@
 plugins {
-    kotlin("jvm") version "2.2.21"
-    kotlin("plugin.spring") version "2.2.21"
-    id("org.springframework.boot") version "4.0.2"
-    id("io.spring.dependency-management") version "1.1.7"
+    alias(libs.plugins.kotlinJvm)
+    alias(libs.plugins.kotlinSpring)
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.spring.dependency.management)
     application
 }
 
@@ -19,6 +19,7 @@ java {
 }
 
 dependencies {
+    implementation(projects.shared)
     implementation(libs.spring.boot.h2console)
     implementation(libs.spring.boot.starter.data.r2dbc)
     implementation(libs.spring.boot.starter.webflux)
@@ -26,7 +27,7 @@ dependencies {
     implementation(libs.jvm.kotlin.reflect)
     implementation(libs.jvm.kotlinx.coroutines.core)
     implementation(libs.jvm.kotlinx.coroutines.reactor)
-    implementation(libs.jackson.kotlin)
+    implementation(libs.kotlinx.serialization.json)
     runtimeOnly(libs.h2)
     runtimeOnly(libs.r2dbc.h2)
     testImplementation(libs.spring.boot.starter.data.r2dbc.test)

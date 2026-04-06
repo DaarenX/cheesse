@@ -1,5 +1,7 @@
 package xyz.daaren.cheesse.domain.game
 
+import xyz.daaren.cheesse.api.PlayerColor
+
 data class CreatedGame(
     val gameId: Long,
     val joinToken: String,
@@ -14,14 +16,3 @@ data class JoinedGame(
     val playerToken: String,
     val color: PlayerColor,
 )
-
-enum class PlayerColor {
-    WHITE,
-    BLACK,
-}
-
-enum class GameColorPreference {
-    WHITE,
-    BLACK,
-    RANDOM,
-}

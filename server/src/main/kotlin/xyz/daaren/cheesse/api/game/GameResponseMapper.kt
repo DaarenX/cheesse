@@ -1,8 +1,8 @@
 package xyz.daaren.cheesse.api.game
 
-import xyz.daaren.cheesse.api.game.dto.CreateGameResponse
-import xyz.daaren.cheesse.api.game.dto.GameResponse
-import xyz.daaren.cheesse.api.game.dto.JoinGameResponse
+import xyz.daaren.cheesse.api.CreateGameResponse
+import xyz.daaren.cheesse.api.GameResponse
+import xyz.daaren.cheesse.api.JoinGameResponse
 import xyz.daaren.cheesse.domain.game.CreatedGame
 import xyz.daaren.cheesse.domain.game.Game
 import xyz.daaren.cheesse.domain.game.JoinedGame

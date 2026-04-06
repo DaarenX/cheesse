@@ -9,11 +9,11 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
-import xyz.daaren.cheesse.api.game.dto.CreateGameRequest
-import xyz.daaren.cheesse.api.game.dto.CreateGameResponse
-import xyz.daaren.cheesse.api.game.dto.GameResponse
-import xyz.daaren.cheesse.api.game.dto.JoinGameRequest
-import xyz.daaren.cheesse.api.game.dto.JoinGameResponse
+import xyz.daaren.cheesse.api.CreateGameRequest
+import xyz.daaren.cheesse.api.CreateGameResponse
+import xyz.daaren.cheesse.api.GameResponse
+import xyz.daaren.cheesse.api.JoinGameRequest
+import xyz.daaren.cheesse.api.JoinGameResponse
 import xyz.daaren.cheesse.domain.game.GameFullException
 import xyz.daaren.cheesse.domain.game.GameNotFoundException
 import xyz.daaren.cheesse.domain.game.GameService

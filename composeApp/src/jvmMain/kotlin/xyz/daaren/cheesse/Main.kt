@@ -2,6 +2,7 @@ package xyz.daaren.cheesse
 
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import xyz.daaren.cheesse.ui.App
 
 fun main() =
     application {
