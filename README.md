@@ -16,11 +16,25 @@ The project is divided into three main modules:
 - promoting pieces
 - handle game result
 - show current player
+- show captured pieces
+- show file and rank of board
 - rotate board so white is at the bottom / board rotation in general
 - application icon
+- creating lobby
+- joining lobby
+- websocket connection to the server
+- move communication
+- resigning
+- time constraints
 
 ### Server
-- basic spring boot setup
+- UUID instead of Long
+- encapsule chess engine in chessengineadapter
+- redis repository for better everything
+- global exception handler and custom exceptions
+- resigning
+- time constraints
+- a lot of tests
 
 ### Misc
 - github actions

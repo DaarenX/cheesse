@@ -1,0 +1,11 @@
+spring:
+  r2dbc:
+    url: r2dbc:h2:mem:///games
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true # Enable the web UI
+  sql:
+    init:
+      mode: always # Tells Spring to run schema.sql on startup
