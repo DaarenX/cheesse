@@ -20,12 +20,9 @@ The project is divided into three main modules:
 - show file and rank of board
 - rotate board so white is at the bottom / board rotation in general
 - application icon
-- creating lobby
-- joining lobby
-- websocket connection to the server
-- move communication
 - resigning
 - time constraints
+- websocket reconnection
 
 ### Server
 - UUID instead of Long
@@ -35,6 +32,9 @@ The project is divided into three main modules:
 - resigning
 - time constraints
 - a lot of tests
+- remove game sessions after some time
+- draw-by-3-fold tracking (store and load move history instead of only fen)
+- websocket disconnection handling
 
 ### Misc
 - github actions
