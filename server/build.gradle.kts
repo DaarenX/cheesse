@@ -20,7 +20,6 @@ java {
 
 dependencies {
     implementation(projects.shared)
-    implementation(libs.spring.boot.h2console)
     implementation(libs.spring.boot.starter.data.r2dbc)
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.reactor.kotlin.extensions)
@@ -28,8 +27,8 @@ dependencies {
     implementation(libs.jvm.kotlinx.coroutines.core)
     implementation(libs.jvm.kotlinx.coroutines.reactor)
     implementation(libs.kotlinx.serialization.json)
-    runtimeOnly(libs.h2)
-    runtimeOnly(libs.r2dbc.h2)
+    runtimeOnly(libs.postgresql)
+    runtimeOnly(libs.r2dbc.postgresql)
     testImplementation(libs.spring.boot.starter.data.r2dbc.test)
     testImplementation(libs.spring.boot.starter.webflux.test)
     testImplementation(libs.kotlin.test.junit5)

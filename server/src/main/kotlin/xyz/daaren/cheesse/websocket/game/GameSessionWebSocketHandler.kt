@@ -243,14 +243,14 @@ class GameSessionWebSocketHandler(
                 ?: throw SessionAuthenticationException(CloseStatus.POLICY_VIOLATION, "Game $gameId does not exist")
 
         return when (playerToken) {
-            game.whiteSeat?.playerToken ->
+            game.whiteSeat?.playerToken?.toString() ->
                 AuthenticatedParticipant(
                     gameId = gameId,
                     playerId = game.whiteSeat.playerId,
                     color = PlayerColor.WHITE,
                 )
 
-            game.blackSeat?.playerToken ->
+            game.blackSeat?.playerToken?.toString() ->
                 AuthenticatedParticipant(
                     gameId = gameId,
                     playerId = game.blackSeat.playerId,
