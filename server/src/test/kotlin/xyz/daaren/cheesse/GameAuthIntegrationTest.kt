@@ -4,9 +4,13 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.test.web.reactive.server.WebTestClient
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
 import xyz.daaren.cheesse.api.ClientMessage
 import xyz.daaren.cheesse.api.CreateGameRequest
 import xyz.daaren.cheesse.api.CreateGameResponse
@@ -29,7 +33,14 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Testcontainers
 class GameAuthIntegrationTest {
+    companion object {
+        @Container
+        @ServiceConnection
+        val postgres = PostgreSQLContainer("postgres:17-alpine")
+    }
+
     @LocalServerPort
     private var port: Int = 0
     private val json = Json { ignoreUnknownKeys = true }

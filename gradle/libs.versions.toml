@@ -21,6 +21,7 @@ voyager = "1.1.0-beta02"
 kodein = "7.31.0"
 spring-dependency-management = "1.1.7"
 spring = "4.0.5"
+testcontainers = "1.21.4"
 chesslib = "1.0.1"
 ktlint = "14.2.0"
 ktor = "3.4.2"
@@ -47,6 +48,10 @@ spring-boot-starter-data-r2dbc = { module = "org.springframework.boot:spring-boo
 spring-boot-starter-data-r2dbc-test = { module = "org.springframework.boot:spring-boot-starter-data-r2dbc-test" }
 spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
 spring-boot-starter-webflux-test = { module = "org.springframework.boot:spring-boot-starter-webflux-test" }
+spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
+testcontainers-r2dbc = { module = "org.testcontainers:r2dbc", version.ref = "testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 r2dbc-postgresql = { module = "org.postgresql:r2dbc-postgresql" }
 postgresql = { module = "org.postgresql:postgresql" }
 junit = { module = "junit:junit", version.ref = "junit" }
