@@ -1,11 +1,8 @@
 spring:
   r2dbc:
-    url: r2dbc:h2:mem:///games
-    username: sa
-    password:
-  h2:
-    console:
-      enabled: true # Enable the web UI
+    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:cheesse}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
   sql:
     init:
-      mode: always # Tells Spring to run schema.sql on startup
+      mode: always

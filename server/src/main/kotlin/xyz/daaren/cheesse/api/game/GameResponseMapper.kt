@@ -19,9 +19,9 @@ internal fun Game.toResponse(): GameResponse =
 internal fun CreatedGame.toResponse(): CreateGameResponse =
     CreateGameResponse(
         gameId = gameId,
-        joinToken = joinToken,
+        joinToken = joinToken.toString(),
         playerId = playerId,
-        playerToken = playerToken,
+        playerToken = playerToken.toString(),
         color = color,
     )
 
@@ -29,6 +29,6 @@ internal fun JoinedGame.toResponse(): JoinGameResponse =
     JoinGameResponse(
         gameId = gameId,
         playerId = playerId,
-        playerToken = playerToken,
+        playerToken = playerToken.toString(),
         color = color,
     )

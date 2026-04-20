@@ -3,10 +3,11 @@ package xyz.daaren.cheesse.persistence.game
 import org.springframework.data.r2dbc.repository.Modifying
 import org.springframework.data.r2dbc.repository.Query
 import org.springframework.data.repository.kotlin.CoroutineCrudRepository
+import java.util.UUID
 
 interface GameRepository : CoroutineCrudRepository<GameEntity, Long> {
     @Query("SELECT * FROM games WHERE join_token = :joinToken")
-    suspend fun findByJoinToken(joinToken: String): GameEntity?
+    suspend fun findByJoinToken(joinToken: UUID): GameEntity?
 
     @Modifying
     @Query(
@@ -19,7 +20,7 @@ interface GameRepository : CoroutineCrudRepository<GameEntity, Long> {
     suspend fun assignBlackPlayer(
         gameId: Long,
         playerId: Long,
-        playerToken: String,
+        playerToken: UUID,
     ): Int
 
     @Modifying
@@ -33,6 +34,6 @@ interface GameRepository : CoroutineCrudRepository<GameEntity, Long> {
     suspend fun assignWhitePlayer(
         gameId: Long,
         playerId: Long,
-        playerToken: String,
+        playerToken: UUID,
     ): Int
 }

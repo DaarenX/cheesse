@@ -1,5 +1,6 @@
 package xyz.daaren.cheesse.domain.game
 
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import xyz.daaren.cheesse.api.GameColorPreference
@@ -14,6 +15,7 @@ import java.util.UUID
 class GameService(
     private val gameRepository: GameRepository,
 ) {
+    private val logger = LoggerFactory.getLogger(GameService::class.java)
     private val secureRandom = SecureRandom()
 
     suspend fun findGame(id: Long): Game? = gameRepository.findById(id)?.toDomainModel()
@@ -26,22 +28,26 @@ class GameService(
                 GameColorPreference.BLACK -> PlayerColor.BLACK
                 GameColorPreference.RANDOM -> if (secureRandom.nextBoolean()) PlayerColor.WHITE else PlayerColor.BLACK
             }
+        val creatorToken = newToken()
         val creatorSeat =
             PlayerSeat(
                 playerId = nextPlayerId(),
-                playerToken = newToken(),
+                playerToken = creatorToken,
             )
+        val joinToken = newToken()
         val savedGame =
             gameRepository.save(
                 GameEntity(
-                    joinToken = newToken(),
+                    joinToken = joinToken,
                     whitePlayerId = creatorSeat.playerId.takeIf { creatorColor == PlayerColor.WHITE },
-                    whitePlayerToken = creatorSeat.playerToken.takeIf { creatorColor == PlayerColor.WHITE },
+                    whitePlayerToken = creatorToken.takeIf { creatorColor == PlayerColor.WHITE },
                     blackPlayerId = creatorSeat.playerId.takeIf { creatorColor == PlayerColor.BLACK },
-                    blackPlayerToken = creatorSeat.playerToken.takeIf { creatorColor == PlayerColor.BLACK },
+                    blackPlayerToken = creatorToken.takeIf { creatorColor == PlayerColor.BLACK },
                 ),
             )
         val gameId = savedGame.id ?: error("Saved game has no id")
+
+        logger.info("game created id: ${savedGame.id} joinToken: $joinToken")
 
         return CreatedGame(
             gameId = gameId,
@@ -54,7 +60,8 @@ class GameService(
 
     @Transactional
     suspend fun joinGame(token: String): JoinedGame {
-        val game = gameRepository.findByJoinToken(token)?.toDomainModel() ?: throw GameNotFoundException(token)
+        val joinToken = parseToken(token) ?: throw GameNotFoundException(token)
+        val game = gameRepository.findByJoinToken(joinToken)?.toDomainModel() ?: throw GameNotFoundException(token)
         val joinerColor =
             when {
                 game.whiteSeat == null -> PlayerColor.WHITE
@@ -69,10 +76,11 @@ class GameService(
             },
         ) { "Game ${game.id} is missing the opposing player data" }
 
+        val joiningToken = newToken()
         val joiningSeat =
             PlayerSeat(
                 playerId = nextPlayerId(),
-                playerToken = newToken(),
+                playerToken = joiningToken,
             )
         val updatedRows =
             when (joinerColor) {
@@ -80,14 +88,14 @@ class GameService(
                     gameRepository.assignWhitePlayer(
                         gameId = game.id,
                         playerId = joiningSeat.playerId,
-                        playerToken = joiningSeat.playerToken,
+                        playerToken = joiningToken,
                     )
 
                 PlayerColor.BLACK ->
                     gameRepository.assignBlackPlayer(
                         gameId = game.id,
                         playerId = joiningSeat.playerId,
-                        playerToken = joiningSeat.playerToken,
+                        playerToken = joiningToken,
                     )
             }
 
@@ -103,7 +111,9 @@ class GameService(
         )
     }
 
-    private fun newToken(): String = UUID.randomUUID().toString()
+    private fun newToken(): UUID = UUID.randomUUID()
+
+    private fun parseToken(token: String): UUID? = runCatching { UUID.fromString(token) }.getOrNull()
 
     private fun nextPlayerId(): Long = secureRandom.nextLong(1, Long.MAX_VALUE)
 }
