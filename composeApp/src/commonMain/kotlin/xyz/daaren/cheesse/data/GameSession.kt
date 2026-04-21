@@ -9,10 +9,10 @@ data class GameSession(
     val id: Long,
     val playerToken: String,
     val playerColor: PlayerColor,
-    val chessConnection: ChessConnection,
+    val gameSessionConnection: GameSessionConnection,
 )
 
-class ChessConnection(
+class GameSessionConnection(
     val updates: Flow<ServerMessage>,
     val sendMove: suspend (ClientMessage.Move) -> Unit,
 )

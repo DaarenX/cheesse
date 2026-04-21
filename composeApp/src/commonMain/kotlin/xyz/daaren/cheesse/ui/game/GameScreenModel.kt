@@ -20,7 +20,7 @@ class GameScreenModel(
 
     init {
         screenModelScope.launch {
-            gameSession.chessConnection.updates.collect {
+            gameSession.gameSessionConnection.updates.collect {
                 if (it is ServerMessage.Move) {
                     internalGame.loadFen(it.fen)
                     gameState.emit(internalGame.toGameState())
@@ -32,7 +32,7 @@ class GameScreenModel(
     override fun makeMove(move: Move) {
         internalGame.makeMove(move)
         screenModelScope.launch {
-            gameSession.chessConnection.sendMove(ClientMessage.Move(move.toUci()))
+            gameSession.gameSessionConnection.sendMove(ClientMessage.Move(move.toUci()))
             gameState.emit(internalGame.toGameState())
         }
     }

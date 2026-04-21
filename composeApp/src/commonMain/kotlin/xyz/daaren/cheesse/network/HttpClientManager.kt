@@ -8,7 +8,7 @@ import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
-fun createHttpClient() =
+fun createHttpClient(baseUrl: String) =
     HttpClient {
         val jsonConfiguration =
             Json {
@@ -25,7 +25,6 @@ fun createHttpClient() =
             contentConverter = KotlinxWebsocketSerializationConverter(jsonConfiguration)
         }
         defaultRequest {
-            host = "127.0.0.1"
-            port = 8080
+            url(baseUrl)
         }
     }

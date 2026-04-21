@@ -13,11 +13,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import xyz.daaren.cheesse.api.GameColorPreference
 import xyz.daaren.cheesse.api.ServerMessage
-import xyz.daaren.cheesse.data.GameRepository
+import xyz.daaren.cheesse.data.ChessServerService
 import xyz.daaren.cheesse.data.GameSession
 
 class HomeScreenModel(
-    private val gameRepository: GameRepository,
+    private val chessServerService: ChessServerService,
 ) : HomeScreenModelApi {
     private val internalUiState = MutableStateFlow(HomeScreenModelApi.HomeUiState())
     override val uiState = internalUiState.asStateFlow()
@@ -31,8 +31,8 @@ class HomeScreenModel(
         screenModelScope.launch {
             internalUiState.update { it.copy(isLoading = true, errorMessage = null) }
             runCatching {
-                val createResponse = gameRepository.createGame(color)
-                val connection = gameRepository.getGameConnection(createResponse.gameId, createResponse.playerToken)
+                val createResponse = chessServerService.createGame(color)
+                val connection = chessServerService.connectToGameSession(createResponse.gameId, createResponse.playerToken)
                 internalUiState.update {
                     it.copy(
                         isLoading = false,
@@ -49,7 +49,7 @@ class HomeScreenModel(
                     id = createResponse.gameId,
                     playerToken = createResponse.playerToken,
                     playerColor = createResponse.color,
-                    chessConnection = connection,
+                    gameSessionConnection = connection,
                 )
             }.onSuccess { session ->
                 startWaitingForOpponent(session)
@@ -76,13 +76,13 @@ class HomeScreenModel(
         screenModelScope.launch {
             internalUiState.update { it.copy(isLoading = true, errorMessage = null) }
             runCatching {
-                val joinResponse = gameRepository.joinGame(sanitizedToken)
-                val connection = gameRepository.getGameConnection(joinResponse.gameId, joinResponse.playerToken)
+                val joinResponse = chessServerService.joinGame(sanitizedToken)
+                val connection = chessServerService.connectToGameSession(joinResponse.gameId, joinResponse.playerToken)
                 GameSession(
                     id = joinResponse.gameId,
                     playerToken = joinResponse.playerToken,
                     playerColor = joinResponse.color,
-                    chessConnection = connection,
+                    gameSessionConnection = connection,
                 )
             }.onSuccess { session ->
                 startWaitingForOpponent(session)
@@ -115,7 +115,7 @@ class HomeScreenModel(
         waitForOpponentJob =
             screenModelScope.launch {
                 println("1")
-                session.chessConnection.updates
+                session.gameSessionConnection.updates
                     .filterIsInstance<ServerMessage.GameStart>()
                     .first()
                 println("2")
