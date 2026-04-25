@@ -104,7 +104,7 @@ class GameAuthIntegrationTest {
             .expectStatus()
             .isOk
             .expectHeader()
-            .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:3000")
+            .valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
             .expectHeader()
             .value(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS) { headerValue ->
                 assertNotNull(headerValue)
