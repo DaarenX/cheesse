@@ -37,3 +37,5 @@
     - server jar
 - github pages
     - wasm build as github page
+- packageReleaseUberJarForCurrentOS instead of packageUberJarForCurrentOS
+  - config proguard
