@@ -79,6 +79,12 @@ class HomeScreen : Screen {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Button(
+                        onClick = { screenModel.createLocalGame() },
+                        enabled = !uiState.isLoading,
+                    ) {
+                        Text("New local Game")
+                    }
+                    Button(
                         onClick = { showCreateGameDialog = true },
                         enabled = !uiState.isLoading,
                     ) {

@@ -1,7 +1,6 @@
 package xyz.daaren.cheesse.websocket.game
 
 import io.github.alluhemanth.chess.core.ChessGame
-import io.github.alluhemanth.chess.core.board.Square
 import io.github.alluhemanth.chess.core.move.Move
 import kotlinx.coroutines.reactor.mono
 import kotlinx.serialization.SerializationException
@@ -18,6 +17,7 @@ import reactor.core.publisher.Mono
 import xyz.daaren.cheesse.api.ClientMessage
 import xyz.daaren.cheesse.api.PlayerColor
 import xyz.daaren.cheesse.api.ServerMessage
+import xyz.daaren.cheesse.makeUciMoveWorkaround
 import xyz.daaren.cheesse.persistence.game.GameRepository
 import xyz.daaren.cheesse.persistence.game.toDomainModel
 import java.util.concurrent.ConcurrentHashMap
@@ -212,21 +212,6 @@ class GameSessionWebSocketHandler(
                 )
                 webSocketSession.send(Mono.just(webSocketSession.textMessage(payload)))
             }.then()
-
-    private fun ChessGame.makeUciMoveWorkaround(uci: String): Boolean {
-        val fromSquare = Square(uci.substring(0, 2))
-        val toSquare = Square(uci.substring(2, 4))
-        val promotionChar = uci.getOrNull(4)
-        val requestedMove = Move(fromSquare, toSquare, promotionChar)
-        val legalMove =
-            getLegalMoves().firstOrNull {
-                it.from == requestedMove.from &&
-                    it.to == requestedMove.to &&
-                    it.promotionPieceType == requestedMove.promotionPieceType
-            } ?: return false
-
-        return makeMove(legalMove)
-    }
 
     private suspend fun authenticateSession(session: WebSocketSession): AuthenticatedParticipant {
         val gameId = extractGameId(session)
