@@ -1,18 +1,20 @@
 # TODO
 
-## Game
-- promoting pieces
-- handle game result
-- show current player
+## Client
+- move history
+  - show general history
+  - allow going back
 - show captured pieces
-- show file and rank of board
-- rotate board so white is at the bottom / board rotation in general
 - application icon
 - resigning
 - time constraints
 - websocket reconnection
 - close websocket when cancelling game creation
 - server url as datastore
+- cheese icons
+- show last move as highlighted squares
+- show last move as animation
+- dialog animations
 
 ## Server
 - encapsule chess engine in chessengineadapter
@@ -28,14 +30,6 @@
 - lobby shareable link
 
 ## Misc
-- github actions
-  - ios build
-  - publishing artifacts
-    - apk
-    - ios
-    - jvm jar
-    - server jar
-- github pages
-    - wasm build as github page
 - packageReleaseUberJarForCurrentOS instead of packageUberJarForCurrentOS
   - config proguard
+- github actions matrix strategy

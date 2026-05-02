@@ -10,6 +10,8 @@ interface HomeScreenModelApi : ScreenModel {
     val uiState: StateFlow<HomeUiState>
     val gameStartEvents: Flow<GameSession>
 
+    fun createLocalGame()
+
     fun createGame(color: GameColorPreference)
 
     fun joinGame(token: String)

@@ -15,6 +15,8 @@ import xyz.daaren.cheesse.api.GameColorPreference
 import xyz.daaren.cheesse.api.ServerMessage
 import xyz.daaren.cheesse.data.ChessServerService
 import xyz.daaren.cheesse.data.GameSession
+import xyz.daaren.cheesse.data.MultiplayerGameSession
+import xyz.daaren.cheesse.data.OfflineGameSession
 
 class HomeScreenModel(
     private val chessServerService: ChessServerService,
@@ -26,6 +28,12 @@ class HomeScreenModel(
     override val gameStartEvents = internalGameStartEvents.asSharedFlow()
 
     private var waitForOpponentJob: Job? = null
+
+    override fun createLocalGame() {
+        screenModelScope.launch {
+            internalGameStartEvents.emit(OfflineGameSession())
+        }
+    }
 
     override fun createGame(color: GameColorPreference) {
         screenModelScope.launch {
@@ -45,7 +53,7 @@ class HomeScreenModel(
                         errorMessage = null,
                     )
                 }
-                GameSession(
+                MultiplayerGameSession(
                     id = createResponse.gameId,
                     playerToken = createResponse.playerToken,
                     playerColor = createResponse.color,
@@ -78,7 +86,7 @@ class HomeScreenModel(
             runCatching {
                 val joinResponse = chessServerService.joinGame(sanitizedToken)
                 val connection = chessServerService.connectToGameSession(joinResponse.gameId, joinResponse.playerToken)
-                GameSession(
+                MultiplayerGameSession(
                     id = joinResponse.gameId,
                     playerToken = joinResponse.playerToken,
                     playerColor = joinResponse.color,
@@ -111,17 +119,14 @@ class HomeScreenModel(
         super.onDispose()
     }
 
-    private fun startWaitingForOpponent(session: GameSession) {
+    private fun startWaitingForOpponent(session: MultiplayerGameSession) {
         waitForOpponentJob =
             screenModelScope.launch {
-                println("1")
                 session.gameSessionConnection.updates
                     .filterIsInstance<ServerMessage.GameStart>()
                     .first()
-                println("2")
                 internalUiState.update { it.copy(isLoading = false, errorMessage = null, waitingLobby = null) }
                 internalGameStartEvents.emit(session)
-                println("3")
             }
     }
 }
