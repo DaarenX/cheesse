@@ -17,7 +17,6 @@ import reactor.core.publisher.Mono
 import xyz.daaren.cheesse.api.ClientMessage
 import xyz.daaren.cheesse.api.PlayerColor
 import xyz.daaren.cheesse.api.ServerMessage
-import xyz.daaren.cheesse.makeUciMoveWorkaround
 import xyz.daaren.cheesse.persistence.game.GameRepository
 import xyz.daaren.cheesse.persistence.game.toDomainModel
 import java.util.concurrent.ConcurrentHashMap
@@ -159,7 +158,7 @@ class GameSessionWebSocketHandler(
             val chessGame = ChessGame().apply { loadFen(currentGame.fen) }
             val isValidMove =
                 try {
-                    chessGame.makeUciMoveWorkaround(moveMessage.moveUci)
+                    chessGame.makeUciMove(moveMessage.moveUci)
                 } catch (_: IllegalArgumentException) {
                     false
                 }

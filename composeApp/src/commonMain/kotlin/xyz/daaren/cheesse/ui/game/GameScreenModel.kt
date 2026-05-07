@@ -10,7 +10,6 @@ import kotlinx.coroutines.launch
 import xyz.daaren.cheesse.api.PlayerColor
 import xyz.daaren.cheesse.data.GameSession
 import xyz.daaren.cheesse.data.OfflineGameSession
-import xyz.daaren.cheesse.makeUciMoveWorkaround
 
 class GameScreenModel(
     private val gameSession: GameSession,
@@ -30,7 +29,7 @@ class GameScreenModel(
     }
 
     override fun makeMove(moveUci: String) {
-        internalGame.makeUciMoveWorkaround(moveUci)
+        internalGame.makeUciMove(moveUci)
         screenModelScope.launch {
             gameSession.sendMove(moveUci)
             gameState.emit(internalGame.toGameState())

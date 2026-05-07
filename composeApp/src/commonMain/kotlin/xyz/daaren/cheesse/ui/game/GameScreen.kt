@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.pointer.pointerInput
@@ -54,6 +55,7 @@ import cheesse.composeapp.generated.resources.chess_pawn
 import cheesse.composeapp.generated.resources.chess_queen
 import cheesse.composeapp.generated.resources.chess_rook
 import cheesse.composeapp.generated.resources.compose_multiplatform
+import cheesse.composeapp.generated.resources.screen_rotation_alt
 import io.github.alluhemanth.chess.core.board.Square
 import io.github.alluhemanth.chess.core.game.GameResult
 import io.github.alluhemanth.chess.core.move.Move
@@ -64,6 +66,7 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import xyz.daaren.cheesse.api.PlayerColor
 import xyz.daaren.cheesse.data.GameSession
+import xyz.daaren.cheesse.data.OfflineGameSession
 import kotlin.math.roundToInt
 
 class GameScreen(
@@ -80,7 +83,15 @@ class GameScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(text = "Cheesse") },
+                    title = {
+                        val text =
+                            if (gameSession is OfflineGameSession) {
+                                "Local Game"
+                            } else {
+                                "Online Game"
+                            }
+                        Text(text = text)
+                    },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(
@@ -91,15 +102,14 @@ class GameScreen(
                     },
                     actions = {
                         Text(
-                            text = "Next: ${gameState.turn}",
+                            text = "Turn: ${gameState.turn}",
                             modifier = Modifier.padding(end = 16.dp),
                         )
                         IconButton(
                             onClick = { boardRotation = if (boardRotation == PlayerColor.WHITE) PlayerColor.BLACK else PlayerColor.WHITE },
                         ) {
-                            // TODO rotation icon
                             Image(
-                                painter = painterResource(Res.drawable.compose_multiplatform),
+                                painter = painterResource(Res.drawable.screen_rotation_alt),
                                 contentDescription = "Rotate board icon",
                             )
                         }
@@ -327,11 +337,29 @@ class GameScreen(
                         )
                     },
         ) {
-            Image(
-                modifier = Modifier.align(Alignment.Center).fillMaxSize(0.8f),
+            Canvas(
+                Modifier
+                    .align(Alignment.Center)
+                    .fillMaxSize(),
+            ) {
+                val color = if (piece.color == PieceColor.WHITE) Color.Black else Color.White
+                drawCircle(
+                    brush =
+                        Brush.radialGradient(
+                            0.25f to color.copy(alpha = 0.5f),
+                            0.75f to color.copy(alpha = 0.1f),
+                            1.0f to Color.Transparent,
+                        ),
+                )
+            }
+            Icon(
+                modifier =
+                    Modifier
+                        .align(Alignment.Center)
+                        .fillMaxSize(0.8f),
                 painter = painterResource(piece.getIcon()),
                 contentDescription = piece.toString(),
-                colorFilter = ColorFilter.tint(if (piece.color == PieceColor.WHITE) Color.White else Color.Black),
+                tint = if (piece.color == PieceColor.WHITE) Color.White else Color.Black,
             )
         }
     }
