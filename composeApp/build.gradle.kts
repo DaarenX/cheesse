@@ -97,6 +97,9 @@ compose.desktop {
         mainClass = "xyz.daaren.cheesse.MainKt"
 
         nativeDistributions {
+            macOS {
+                iconFile.set(file("src/jvmMain/resources/cheesse-icon.icns"))
+            }
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "xyz.daaren.cheesse"
             packageVersion = "1.0.0"

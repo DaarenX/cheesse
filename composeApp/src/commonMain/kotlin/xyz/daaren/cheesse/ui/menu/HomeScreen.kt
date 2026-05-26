@@ -2,16 +2,21 @@ package xyz.daaren.cheesse.ui.menu
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -24,12 +29,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.kodein.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import cheesse.composeapp.generated.resources.Res
+import cheesse.composeapp.generated.resources.cheesse_icon
+import cheesse.composeapp.generated.resources.github
 import kotlinx.coroutines.flow.collectLatest
+import org.jetbrains.compose.resources.painterResource
 import xyz.daaren.cheesse.api.GameColorPreference
 import xyz.daaren.cheesse.ui.game.GameScreen
 import xyz.daaren.cheesse.ui.settings.SettingsScreen
@@ -51,7 +62,7 @@ class HomeScreen : Screen {
             }
         }
 
-        AnimatedVisibility(showJoinGameDialog) {
+        if (showJoinGameDialog) {
             JoinGameDialog(
                 isLoading = uiState.isLoading,
                 errorMessage = uiState.errorMessage,
@@ -60,7 +71,7 @@ class HomeScreen : Screen {
                 onDismissError = screenModel::dismissError,
             )
         }
-        AnimatedVisibility(showCreateGameDialog) {
+        if (showCreateGameDialog) {
             CreateGameDialog(
                 isLoading = uiState.isLoading,
                 onDismissRequest = { showCreateGameDialog = false },
@@ -72,42 +83,79 @@ class HomeScreen : Screen {
         }
         Box(Modifier.fillMaxSize()) {
             val waitingLobby = uiState.waitingLobby
-            if (waitingLobby == null) {
-                Column(
-                    Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.align(Alignment.Center),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.weight(1f),
                 ) {
-                    Button(
-                        onClick = { screenModel.createLocalGame() },
-                        enabled = !uiState.isLoading,
-                    ) {
-                        Text("New local Game")
-                    }
-                    Button(
-                        onClick = { showCreateGameDialog = true },
-                        enabled = !uiState.isLoading,
-                    ) {
-                        Text("New Game")
-                    }
-                    Button(
-                        onClick = { showJoinGameDialog = true },
-                        enabled = !uiState.isLoading,
-                    ) {
-                        Text("Join Game")
-                    }
-                    Button(
-                        onClick = { navigator.push(SettingsScreen()) },
-                        enabled = !uiState.isLoading,
-                    ) {
-                        Text("Settings")
-                    }
+                    Image(
+                        painterResource(Res.drawable.cheesse_icon),
+                        contentDescription = "Cheesse Icon",
+                        modifier = Modifier.size(48.dp),
+                    )
+                    Text(
+                        text = " Cheesse",
+                        fontSize = 32.sp,
+                    )
                 }
-            } else {
-                WaitingForOpponent(
-                    modifier = Modifier.align(Alignment.Center),
-                    waitingLobby = waitingLobby,
-                    onCancel = screenModel::cancelWaiting,
+
+                if (waitingLobby == null) {
+                    Column(
+                        Modifier.align(Alignment.CenterHorizontally),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Button(
+                            onClick = { screenModel.createLocalGame() },
+                            enabled = !uiState.isLoading,
+                        ) {
+                            Text("New local Game")
+                        }
+                        Button(
+                            onClick = { showCreateGameDialog = true },
+                            enabled = !uiState.isLoading,
+                        ) {
+                            Text("New Game")
+                        }
+                        Button(
+                            onClick = { showJoinGameDialog = true },
+                            enabled = !uiState.isLoading,
+                        ) {
+                            Text("Join Game")
+                        }
+                        Button(
+                            onClick = { navigator.push(SettingsScreen()) },
+                            enabled = !uiState.isLoading,
+                        ) {
+                            Text("Settings")
+                        }
+                    }
+                } else {
+                    WaitingForOpponent(
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        waitingLobby = waitingLobby,
+                        onCancel = screenModel::cancelWaiting,
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+            }
+
+            val uriHandler = LocalUriHandler.current
+            IconButton(
+                onClick = { uriHandler.openUri("https://github.com/DaarenX/cheesse") },
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 16.dp),
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.github),
+                    contentDescription = "GitHub Repository",
+                    modifier = Modifier.size(48.dp),
                 )
             }
 

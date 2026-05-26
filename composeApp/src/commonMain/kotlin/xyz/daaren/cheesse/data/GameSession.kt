@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.map
 import xyz.daaren.cheesse.api.ClientMessage
 import xyz.daaren.cheesse.api.PlayerColor
 import xyz.daaren.cheesse.api.ServerMessage
-import xyz.daaren.cheesse.makeUciMoveWorkaround
 
 interface GameSession {
     val playerColor: PlayerColor
@@ -28,7 +27,7 @@ class OfflineGameSession : GameSession {
     override val playerColor: PlayerColor = PlayerColor.WHITE
 
     override suspend fun sendMove(moveUci: String) {
-        if (internalChessGame.makeUciMoveWorkaround(moveUci)) {
+        if (internalChessGame.makeUciMove(moveUci)) {
             _updates.emit(internalChessGame.getFen())
         }
     }

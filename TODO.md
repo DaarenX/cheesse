@@ -1,20 +1,25 @@
 # TODO
 
 ## Client
+### Functional
 - move history
   - show general history
   - allow going back
 - show captured pieces
-- application icon
 - resigning
 - time constraints
 - websocket reconnection
 - close websocket when cancelling game creation
 - server url as datastore
-- cheese icons
+
+### Design
 - show last move as highlighted squares
 - show last move as animation
 - dialog animations
+- move preview highlighting
+- making moves without dragging
+- replace shadow / glow with outlined icon
+- custom chess piece icons
 
 ## Server
 - encapsule chess engine in chessengineadapter
@@ -30,6 +35,10 @@
 - lobby shareable link
 
 ## Misc
+- signing ios
+- signing android
 - packageReleaseUberJarForCurrentOS instead of packageUberJarForCurrentOS
-  - config proguard
+      - config proguard
 - github actions matrix strategy
+- windows icon lol
+- github description banner
