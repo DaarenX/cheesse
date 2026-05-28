@@ -21,6 +21,9 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
         }
+        androidResources {
+            enable = true
+        }
     }
 
     listOf(

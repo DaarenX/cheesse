@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -335,23 +336,18 @@ class GameScreen(
                                 endMovePreview()
                             },
                         )
+                    }.drawBehind {
+                        val color = if (piece.color == PieceColor.WHITE) Color.Black else Color.White
+                        drawCircle(
+                            brush =
+                                Brush.radialGradient(
+                                    0.25f to color.copy(alpha = 0.5f),
+                                    0.75f to color.copy(alpha = 0.1f),
+                                    1.0f to Color.Transparent,
+                                ),
+                        )
                     },
         ) {
-            Canvas(
-                Modifier
-                    .align(Alignment.Center)
-                    .fillMaxSize(),
-            ) {
-                val color = if (piece.color == PieceColor.WHITE) Color.Black else Color.White
-                drawCircle(
-                    brush =
-                        Brush.radialGradient(
-                            0.25f to color.copy(alpha = 0.5f),
-                            0.75f to color.copy(alpha = 0.1f),
-                            1.0f to Color.Transparent,
-                        ),
-                )
-            }
             Icon(
                 modifier =
                     Modifier
@@ -380,7 +376,7 @@ private fun Piece.getIcon(): DrawableResource = pieceType.getIcon()
 private fun PieceType.toPromotionString(): String =
     when (this) {
         PieceType.PAWN -> ""
-        PieceType.KNIGHT -> "k"
+        PieceType.KNIGHT -> "n"
         PieceType.BISHOP -> "b"
         PieceType.ROOK -> "r"
         PieceType.QUEEN -> "q"

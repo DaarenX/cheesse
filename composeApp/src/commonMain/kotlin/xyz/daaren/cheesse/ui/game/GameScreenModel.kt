@@ -29,7 +29,9 @@ class GameScreenModel(
     }
 
     override fun makeMove(moveUci: String) {
-        internalGame.makeUciMove(moveUci)
+        if (!internalGame.makeUciMove(moveUci)) {
+            println("Failed to make move $moveUci, legal moves: ${internalGame.getLegalMoves()}")
+        }
         screenModelScope.launch {
             gameSession.sendMove(moveUci)
             gameState.emit(internalGame.toGameState())
