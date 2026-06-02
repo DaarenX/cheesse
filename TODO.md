@@ -11,6 +11,7 @@
 - websocket reconnection
 - close websocket when cancelling game creation
 - server url as datastore
+- fix (mac) trackpad drag bug
 
 ### Design
 - show last move as highlighted squares
@@ -19,6 +20,7 @@
 - move preview highlighting
 - making moves without dragging
 - replace shadow / glow with outlined icon
+- fix shadow appearing before icons (icon preloading?)
 - custom chess piece icons
 
 ## Server
@@ -35,10 +37,13 @@
 - lobby shareable link
 
 ## Misc
+- fix xcode compose multiplatform 1.11.0 update
 - signing ios
 - signing android
 - packageReleaseUberJarForCurrentOS instead of packageUberJarForCurrentOS
       - config proguard
 - github actions matrix strategy
-- windows icon lol
+- windows icon (lol)
+- linux app icon
+- ios app icon
 - github description banner
