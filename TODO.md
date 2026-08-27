@@ -20,7 +20,6 @@
 - move preview highlighting
 - making moves without dragging
 - replace shadow / glow with outlined icon
-- fix shadow appearing before icons (icon preloading?)
 - custom chess piece icons
 
 ## Server
