@@ -43,19 +43,13 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.kodein.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cheesse.composeapp.generated.resources.Res
 import cheesse.composeapp.generated.resources.arrow_back
-import cheesse.composeapp.generated.resources.chess_bishop_2
-import cheesse.composeapp.generated.resources.chess_king_2
-import cheesse.composeapp.generated.resources.chess_knight
-import cheesse.composeapp.generated.resources.chess_pawn
-import cheesse.composeapp.generated.resources.chess_queen
-import cheesse.composeapp.generated.resources.chess_rook
-import cheesse.composeapp.generated.resources.compose_multiplatform
 import cheesse.composeapp.generated.resources.screen_rotation_alt
 import io.github.alluhemanth.chess.core.board.Square
 import io.github.alluhemanth.chess.core.game.GameResult
@@ -63,7 +57,6 @@ import io.github.alluhemanth.chess.core.move.Move
 import io.github.alluhemanth.chess.core.piece.Piece
 import io.github.alluhemanth.chess.core.piece.PieceColor
 import io.github.alluhemanth.chess.core.piece.PieceType
-import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import xyz.daaren.cheesse.api.PlayerColor
 import xyz.daaren.cheesse.data.GameSession
@@ -199,8 +192,9 @@ class GameScreen(
                 }
 
                 if (selectedPiece != null) {
-                    gameState.legalMoves.filter { it.from == selectedPiece }.map { it.to }.forEach { square ->
-                        Image(
+                    gameState.legalMoves.filter { it.from == selectedPiece }.forEach { move ->
+                        val square = move.to
+                        Canvas(
                             modifier =
                                 Modifier
                                     .align(AbsoluteAlignment.TopLeft)
@@ -212,9 +206,13 @@ class GameScreen(
                                             (pxSize * square.displayRow(boardRotation)).roundToInt(),
                                         )
                                     },
-                            painter = painterResource(Res.drawable.compose_multiplatform),
-                            contentDescription = "test",
-                        )
+                        ) {
+                            if (move.isCapture) {
+                                drawCircle(Color.Black.copy(alpha = 0.7f), radius = size.minDimension * 0.4f)
+                            } else {
+                                drawCircle(Color.Black.copy(alpha = 0.7f), radius = size.minDimension * 0.25f)
+                            }
+                        }
                     }
                 }
             }
@@ -288,10 +286,12 @@ class GameScreen(
         modifier: Modifier = Modifier,
     ) {
         var offset by remember { mutableStateOf(Offset.Zero) }
+        var isDragging by remember { mutableStateOf(false) }
 
         Box(
             modifier =
                 modifier
+                    .zIndex(if (isDragging) 1f else 0f)
                     .offset {
                         val pxSize = squareSize.toPx()
                         IntOffset(
@@ -301,6 +301,7 @@ class GameScreen(
                     }.pointerInput(square, legalMoves) {
                         detectDragGestures(
                             onDragStart = {
+                                isDragging = true
                                 startMovePreview(square)
                             },
                             onDrag = { change, dragAmount ->
@@ -308,6 +309,7 @@ class GameScreen(
                                 offset += dragAmount
                             },
                             onDragEnd = {
+                                isDragging = false
                                 val pxSize = squareSize.toPx()
                                 val colMove = (offset.x / pxSize).roundToInt()
                                 val rowMove = (offset.y / pxSize).roundToInt()
@@ -332,6 +334,7 @@ class GameScreen(
                                 endMovePreview()
                             },
                             onDragCancel = {
+                                isDragging = false
                                 offset = Offset.Zero
                                 endMovePreview()
                             },
@@ -360,18 +363,6 @@ class GameScreen(
         }
     }
 }
-
-private fun PieceType.getIcon(): DrawableResource =
-    when (this) {
-        PieceType.PAWN -> Res.drawable.chess_pawn
-        PieceType.KNIGHT -> Res.drawable.chess_knight
-        PieceType.BISHOP -> Res.drawable.chess_bishop_2
-        PieceType.ROOK -> Res.drawable.chess_rook
-        PieceType.QUEEN -> Res.drawable.chess_queen
-        PieceType.KING -> Res.drawable.chess_king_2
-    }
-
-private fun Piece.getIcon(): DrawableResource = pieceType.getIcon()
 
 private fun PieceType.toPromotionString(): String =
     when (this) {

@@ -37,17 +37,22 @@ import cafe.adriel.voyager.kodein.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cheesse.composeapp.generated.resources.Res
+import cheesse.composeapp.generated.resources.arrow_back
 import cheesse.composeapp.generated.resources.cheesse_icon
 import cheesse.composeapp.generated.resources.github
+import cheesse.composeapp.generated.resources.screen_rotation_alt
+import io.github.alluhemanth.chess.core.piece.PieceType
 import kotlinx.coroutines.flow.collectLatest
 import org.jetbrains.compose.resources.painterResource
 import xyz.daaren.cheesse.api.GameColorPreference
 import xyz.daaren.cheesse.ui.game.GameScreen
+import xyz.daaren.cheesse.ui.game.getIcon
 import xyz.daaren.cheesse.ui.settings.SettingsScreen
 
 class HomeScreen : Screen {
     @Composable
     override fun Content() {
+        PreloadIcons()
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel<HomeScreenModelApi>()
         val uiState by screenModel.uiState.collectAsState()
@@ -180,6 +185,15 @@ class HomeScreen : Screen {
                 }
             }
         }
+    }
+
+    @Composable
+    private fun PreloadIcons() {
+        PieceType.entries.forEach {
+            painterResource(it.getIcon())
+        }
+        painterResource(Res.drawable.arrow_back)
+        painterResource(Res.drawable.screen_rotation_alt)
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
