@@ -21,8 +21,7 @@ voyager = "1.1.0-beta03"
 kodein = "7.32.0"
 spring-dependency-management = "1.1.7"
 spring = "4.1.1"
-testcontainers = "1.21.4"
-chesslib = "1.0.2"
+chesslib = "1.0.0"
 ktlint = "14.2.0"
 ktor = "3.5.0"
 kotlinx-serialization = "1.11.0"
@@ -49,9 +48,9 @@ spring-boot-starter-data-r2dbc-test = { module = "org.springframework.boot:sprin
 spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
 spring-boot-starter-webflux-test = { module = "org.springframework.boot:spring-boot-starter-webflux-test" }
 spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
-testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
-testcontainers-r2dbc = { module = "org.testcontainers:r2dbc", version.ref = "testcontainers" }
-testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
+testcontainers-r2dbc = { module = "org.testcontainers:testcontainers-r2dbc" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
 r2dbc-postgresql = { module = "org.postgresql:r2dbc-postgresql" }
 postgresql = { module = "org.postgresql:postgresql" }
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -72,7 +71,7 @@ voyager-screenmodel = { module = "cafe.adriel.voyager:voyager-screenmodel", vers
 voyager-tabs = { module = "cafe.adriel.voyager:voyager-tab-navigator", version.ref = "voyager" }
 voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", version.ref = "voyager" }
 voyager-kodein = { module = "cafe.adriel.voyager:voyager-kodein", version.ref = "voyager" }
-chess-lib = { module = "io.github.alluhemanth:chess-core", version.ref = "chesslib" }
+chess-lib = { module = "xyz.daaren:chess-core", version.ref = "chesslib" }
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }

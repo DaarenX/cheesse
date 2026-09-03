@@ -5,20 +5,26 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import xyz.daaren.cheesse.api.GameColorPreference
 import xyz.daaren.cheesse.api.PlayerColor
+import xyz.daaren.cheesse.domain.chess.ChessEngineAdapter
+import xyz.daaren.cheesse.domain.chess.ChessMoveResult
 import xyz.daaren.cheesse.persistence.game.GameEntity
 import xyz.daaren.cheesse.persistence.game.GameRepository
 import xyz.daaren.cheesse.persistence.game.toDomainModel
+import xyz.daaren.cheesse.persistence.game.withHistory
 import java.security.SecureRandom
 import java.util.UUID
 
 @Service
 class GameService(
     private val gameRepository: GameRepository,
+    private val chessEngineAdapter: ChessEngineAdapter,
 ) {
     private val logger = LoggerFactory.getLogger(GameService::class.java)
     private val secureRandom = SecureRandom()
 
     suspend fun findGame(id: Long): Game? = gameRepository.findById(id)?.toDomainModel()
+
+    suspend fun getGame(id: Long): Game = findGame(id) ?: throw GameNotFoundException(id)
 
     @Transactional
     suspend fun createGame(colorPreference: GameColorPreference = GameColorPreference.WHITE): CreatedGame {
@@ -109,6 +115,61 @@ class GameService(
             playerToken = joiningSeat.playerToken,
             color = joinerColor,
         )
+    }
+
+    suspend fun isGameReady(gameId: Long): Boolean {
+        val game = gameRepository.findById(gameId) ?: return false
+        return game.whitePlayerId != null && game.blackPlayerId != null
+    }
+
+    suspend fun authenticateParticipant(
+        gameId: Long,
+        playerToken: String,
+    ): AuthenticatedParticipant? {
+        val game = findGame(gameId) ?: return null
+        return when (playerToken) {
+            game.whiteSeat?.playerToken?.toString() ->
+                AuthenticatedParticipant(
+                    gameId = gameId,
+                    playerId = game.whiteSeat.playerId,
+                    color = PlayerColor.WHITE,
+                )
+
+            game.blackSeat?.playerToken?.toString() ->
+                AuthenticatedParticipant(
+                    gameId = gameId,
+                    playerId = game.blackSeat.playerId,
+                    color = PlayerColor.BLACK,
+                )
+
+            else -> null
+        }
+    }
+
+    suspend fun executeMove(
+        gameId: Long,
+        playerId: Long,
+        playerColor: PlayerColor,
+        moveUci: String,
+    ): MoveExecutionResult {
+        val currentGameEntity = gameRepository.findById(gameId) ?: return MoveExecutionResult.GameNotFound
+        val currentGame = currentGameEntity.toDomainModel()
+
+        if (chessEngineAdapter.activePlayerColor(currentGame.fen) != playerColor) {
+            return MoveExecutionResult.NotYourTurn
+        }
+
+        return when (val moveResult = chessEngineAdapter.applyMove(currentGame.history, moveUci)) {
+            is ChessMoveResult.IllegalMove -> MoveExecutionResult.IllegalMove(moveUci)
+            is ChessMoveResult.GameOver -> MoveExecutionResult.GameOver(moveResult.gameResult)
+            is ChessMoveResult.Success -> {
+                val savedGame =
+                    gameRepository
+                        .save(currentGameEntity.withHistory(moveResult.history, moveResult.fen, moveResult.pgn))
+                        .toDomainModel()
+                MoveExecutionResult.Success(savedGame)
+            }
+        }
     }
 
     private fun newToken(): UUID = UUID.randomUUID()

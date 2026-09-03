@@ -1,7 +1,5 @@
 package xyz.daaren.cheesse.websocket.game
 
-import io.github.alluhemanth.chess.core.ChessGame
-import io.github.alluhemanth.chess.core.move.Move
 import kotlinx.coroutines.reactor.mono
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
@@ -15,15 +13,16 @@ import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import xyz.daaren.cheesse.api.ClientMessage
-import xyz.daaren.cheesse.api.PlayerColor
 import xyz.daaren.cheesse.api.ServerMessage
-import xyz.daaren.cheesse.persistence.game.GameRepository
-import xyz.daaren.cheesse.persistence.game.toDomainModel
+import xyz.daaren.cheesse.domain.game.AuthenticatedParticipant
+import xyz.daaren.cheesse.domain.game.Game
+import xyz.daaren.cheesse.domain.game.GameService
+import xyz.daaren.cheesse.domain.game.MoveExecutionResult
 import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class GameSessionWebSocketHandler(
-    private val gameRepository: GameRepository,
+    private val gameService: GameService,
 ) : WebSocketHandler {
     private val logger = LoggerFactory.getLogger(GameSessionWebSocketHandler::class.java)
     private val sessionsByGameId = ConcurrentHashMap<Long, MutableSet<WebSocketSession>>()
@@ -143,48 +142,46 @@ class GameSessionWebSocketHandler(
             }
 
         return mono {
-            val currentGameEntity =
-                gameRepository.findById(participant.gameId)
-                    ?: return@mono SessionAction.Close(
+            when (
+                val result =
+                    gameService.executeMove(
+                        gameId = participant.gameId,
+                        playerId = participant.playerId,
+                        playerColor = participant.color,
+                        moveUci = moveMessage.moveUci,
+                    )
+            ) {
+                is MoveExecutionResult.Success -> {
+                    SessionAction.Broadcast(serverMessagePayload(result.game.toMoveMessage()))
+                }
+
+                is MoveExecutionResult.GameOver -> {
+                    SessionAction.Reply(errorPayload("Game is over: ${result.gameResult}"))
+                }
+
+                is MoveExecutionResult.NotYourTurn -> {
+                    SessionAction.Reply(errorPayload("It is not your turn"))
+                }
+
+                is MoveExecutionResult.IllegalMove -> {
+                    SessionAction.Reply(errorPayload("Illegal move: ${result.moveUci}"))
+                }
+
+                is MoveExecutionResult.GameNotFound -> {
+                    SessionAction.Close(
                         status = CloseStatus.POLICY_VIOLATION,
                         payload = errorPayload("Game ${participant.gameId} does not exist"),
                     )
-            val currentGame = currentGameEntity.toDomainModel()
-
-            if (activePlayerColor(currentGame.fen) != participant.color) {
-                return@mono SessionAction.Reply(errorPayload("It is not your turn"))
-            }
-
-            val chessGame = ChessGame().apply { loadFen(currentGame.fen) }
-            val isValidMove =
-                try {
-                    chessGame.makeUciMove(moveMessage.moveUci)
-                } catch (_: IllegalArgumentException) {
-                    false
                 }
-
-            if (!isValidMove) {
-                return@mono SessionAction.Reply(errorPayload("Illegal move: ${moveMessage.moveUci}"))
             }
-
-            val savedGame =
-                gameRepository
-                    .save(
-                        currentGameEntity.copy(
-                            fen = chessGame.getFen(),
-                            pgn = chessGame.getPgn(),
-                        ),
-                    ).toDomainModel()
-
-            SessionAction.Broadcast(serverMessagePayload(ServerMessage.Move(savedGame.fen)))
         }
     }
 
     private fun notifyGameStartIfReady(gameId: Long): Mono<Void> =
         mono {
-            val game = gameRepository.findById(gameId) ?: return@mono false
+            val isReady = gameService.isGameReady(gameId)
             val activeSessions = sessionsByGameId[gameId]?.count { it.isOpen } ?: 0
-            game.whitePlayerId != null && game.blackPlayerId != null && activeSessions >= 2
+            isReady && activeSessions >= 2
         }.flatMap { shouldBroadcast ->
             if (shouldBroadcast) {
                 val payload = serverMessagePayload(ServerMessage.GameStart)
@@ -222,27 +219,9 @@ class GameSessionWebSocketHandler(
                 .getFirst("playerToken")
                 ?.takeIf { it.isNotBlank() }
                 ?: throw SessionAuthenticationException(CloseStatus.POLICY_VIOLATION, "Missing playerToken query parameter")
-        val game =
-            gameRepository.findById(gameId)?.toDomainModel()
-                ?: throw SessionAuthenticationException(CloseStatus.POLICY_VIOLATION, "Game $gameId does not exist")
 
-        return when (playerToken) {
-            game.whiteSeat?.playerToken?.toString() ->
-                AuthenticatedParticipant(
-                    gameId = gameId,
-                    playerId = game.whiteSeat.playerId,
-                    color = PlayerColor.WHITE,
-                )
-
-            game.blackSeat?.playerToken?.toString() ->
-                AuthenticatedParticipant(
-                    gameId = gameId,
-                    playerId = game.blackSeat.playerId,
-                    color = PlayerColor.BLACK,
-                )
-
-            else -> throw SessionAuthenticationException(CloseStatus.POLICY_VIOLATION, "Invalid player token for game $gameId")
-        }
+        return gameService.authenticateParticipant(gameId, playerToken)
+            ?: throw SessionAuthenticationException(CloseStatus.POLICY_VIOLATION, "Invalid player token for game $gameId")
     }
 
     private fun extractGameId(session: WebSocketSession): Long =
@@ -251,20 +230,12 @@ class GameSessionWebSocketHandler(
             .last()
             .toLong()
 
-    private fun activePlayerColor(fen: String): PlayerColor {
-        val parts = fen.split(" ")
-        return if (parts.getOrNull(1) == "b") PlayerColor.BLACK else PlayerColor.WHITE
-    }
+    private fun Game.toMoveMessage(): ServerMessage.Move =
+        ServerMessage.Move(fen = fen, startFen = history.startFen, movesUci = history.movesUci)
 
     private fun errorPayload(message: String): String = serverMessagePayload(ServerMessage.Error(message))
 
     private fun serverMessagePayload(message: ServerMessage): String = json.encodeToString<ServerMessage>(message)
-
-    private data class AuthenticatedParticipant(
-        val gameId: Long,
-        val playerId: Long,
-        val color: PlayerColor,
-    )
 
     private class SessionAuthenticationException(
         val status: CloseStatus,

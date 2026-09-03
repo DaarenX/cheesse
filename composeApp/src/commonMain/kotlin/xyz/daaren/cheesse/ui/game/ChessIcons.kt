@@ -7,18 +7,18 @@ import cheesse.composeapp.generated.resources.chess_knight
 import cheesse.composeapp.generated.resources.chess_pawn
 import cheesse.composeapp.generated.resources.chess_queen
 import cheesse.composeapp.generated.resources.chess_rook
-import io.github.alluhemanth.chess.core.piece.Piece
-import io.github.alluhemanth.chess.core.piece.PieceType
 import org.jetbrains.compose.resources.DrawableResource
+import xyz.daaren.cheesse.domain.chess.ChessPiece
+import xyz.daaren.cheesse.domain.chess.ChessPieceType
 
-fun PieceType.getIcon(): DrawableResource =
+fun ChessPieceType.getIcon(): DrawableResource =
     when (this) {
-        PieceType.PAWN -> Res.drawable.chess_pawn
-        PieceType.KNIGHT -> Res.drawable.chess_knight
-        PieceType.BISHOP -> Res.drawable.chess_bishop_2
-        PieceType.ROOK -> Res.drawable.chess_rook
-        PieceType.QUEEN -> Res.drawable.chess_queen
-        PieceType.KING -> Res.drawable.chess_king_2
+        ChessPieceType.PAWN -> Res.drawable.chess_pawn
+        ChessPieceType.KNIGHT -> Res.drawable.chess_knight
+        ChessPieceType.BISHOP -> Res.drawable.chess_bishop_2
+        ChessPieceType.ROOK -> Res.drawable.chess_rook
+        ChessPieceType.QUEEN -> Res.drawable.chess_queen
+        ChessPieceType.KING -> Res.drawable.chess_king_2
     }
 
-fun Piece.getIcon(): DrawableResource = pieceType.getIcon()
+fun ChessPiece.getIcon(): DrawableResource = type.getIcon()

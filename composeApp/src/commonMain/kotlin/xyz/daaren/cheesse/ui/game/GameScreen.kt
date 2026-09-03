@@ -51,16 +51,15 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import cheesse.composeapp.generated.resources.Res
 import cheesse.composeapp.generated.resources.arrow_back
 import cheesse.composeapp.generated.resources.screen_rotation_alt
-import io.github.alluhemanth.chess.core.board.Square
-import io.github.alluhemanth.chess.core.game.GameResult
-import io.github.alluhemanth.chess.core.move.Move
-import io.github.alluhemanth.chess.core.piece.Piece
-import io.github.alluhemanth.chess.core.piece.PieceColor
-import io.github.alluhemanth.chess.core.piece.PieceType
 import org.jetbrains.compose.resources.painterResource
 import xyz.daaren.cheesse.api.PlayerColor
 import xyz.daaren.cheesse.data.GameSession
 import xyz.daaren.cheesse.data.OfflineGameSession
+import xyz.daaren.cheesse.domain.chess.ChessGameResult
+import xyz.daaren.cheesse.domain.chess.ChessMove
+import xyz.daaren.cheesse.domain.chess.ChessPiece
+import xyz.daaren.cheesse.domain.chess.ChessPieceType
+import xyz.daaren.cheesse.domain.chess.ChessSquare
 import kotlin.math.roundToInt
 
 class GameScreen(
@@ -172,7 +171,7 @@ class GameScreen(
                 val squareSize = minWidth / 8
 
                 // Needed to show all target squares for selected piece
-                var selectedPiece by remember { mutableStateOf<Square?>(null) }
+                var selectedPiece by remember { mutableStateOf<ChessSquare?>(null) }
 
                 gameState.piecePositions.forEach { (piece, square) ->
                     val legalMoves = gameState.legalMoves.filter { it.from == square }
@@ -274,12 +273,12 @@ class GameScreen(
 
     @Composable
     private fun DraggablePiece(
-        piece: Piece,
-        square: Square,
+        piece: ChessPiece,
+        square: ChessSquare,
         squareSize: Dp,
-        legalMoves: List<Move>,
+        legalMoves: List<ChessMove>,
         playerColor: PlayerColor,
-        startMovePreview: (Square) -> Unit,
+        startMovePreview: (ChessSquare) -> Unit,
         endMovePreview: () -> Unit,
         onMove: (String) -> Unit,
         onPromotionRequested: (String) -> Unit,
@@ -315,7 +314,7 @@ class GameScreen(
                                 val rowMove = (offset.y / pxSize).roundToInt()
 
                                 val targetSquare =
-                                    getSquareFromDisplay(
+                                    ChessSquare.fromDisplay(
                                         square.displayCol(playerColor) + colMove,
                                         square.displayRow(playerColor) + rowMove,
                                         playerColor,
@@ -325,9 +324,9 @@ class GameScreen(
                                 val possibleMoves = legalMoves.filter { it.to == targetSquare }
 
                                 if (possibleMoves.size > 1) {
-                                    onPromotionRequested(square.toString() + targetSquare.toString())
+                                    onPromotionRequested(square.name + targetSquare.name)
                                 } else if (possibleMoves.isNotEmpty()) {
-                                    onMove(possibleMoves.first().toUci())
+                                    onMove(possibleMoves.first().uci)
                                 }
 
                                 offset = Offset.Zero
@@ -340,7 +339,7 @@ class GameScreen(
                             },
                         )
                     }.drawBehind {
-                        val color = if (piece.color == PieceColor.WHITE) Color.Black else Color.White
+                        val color = if (piece.color == PlayerColor.WHITE) Color.Black else Color.White
                         drawCircle(
                             brush =
                                 Brush.radialGradient(
@@ -358,41 +357,24 @@ class GameScreen(
                         .fillMaxSize(0.8f),
                 painter = painterResource(piece.getIcon()),
                 contentDescription = piece.toString(),
-                tint = if (piece.color == PieceColor.WHITE) Color.White else Color.Black,
+                tint = if (piece.color == PlayerColor.WHITE) Color.White else Color.Black,
             )
         }
     }
 }
 
-private fun PieceType.toPromotionString(): String =
+private fun ChessPieceType.toPromotionString(): String =
     when (this) {
-        PieceType.PAWN -> ""
-        PieceType.KNIGHT -> "n"
-        PieceType.BISHOP -> "b"
-        PieceType.ROOK -> "r"
-        PieceType.QUEEN -> "q"
-        PieceType.KING -> ""
+        ChessPieceType.PAWN, ChessPieceType.KING -> ""
+        ChessPieceType.KNIGHT -> "n"
+        ChessPieceType.BISHOP -> "b"
+        ChessPieceType.ROOK -> "r"
+        ChessPieceType.QUEEN -> "q"
     }
 
-private fun Square.displayCol(boardRotation: PlayerColor): Int = if (boardRotation == PlayerColor.WHITE) colIndex() else 7 - colIndex()
+private fun ChessSquare.displayCol(boardRotation: PlayerColor): Int = if (boardRotation == PlayerColor.WHITE) colIndex else 7 - colIndex
 
-private fun Square.displayRow(boardRotation: PlayerColor): Int = if (boardRotation == PlayerColor.WHITE) 7 - rowIndex() else rowIndex()
-
-private fun getSquareFromDisplay(
-    displayCol: Int,
-    displayRow: Int,
-    playerColor: PlayerColor,
-): Square {
-    val col = if (playerColor == PlayerColor.WHITE) displayCol else 7 - displayCol
-    val row = if (playerColor == PlayerColor.WHITE) 7 - displayRow else displayRow
-    val file = 'a' + col.coerceIn(0, 7)
-    val rank = row.coerceIn(0, 7) + 1
-    return Square("$file$rank")
-}
-
-private fun Square.colIndex(): Int = file.value - 'a'
-
-private fun Square.rowIndex(): Int = rank.value - 1
+private fun ChessSquare.displayRow(boardRotation: PlayerColor): Int = if (boardRotation == PlayerColor.WHITE) 7 - rowIndex else rowIndex
 
 @Composable
 private fun PromotionDialog(
@@ -408,7 +390,7 @@ private fun PromotionDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                listOf(PieceType.QUEEN, PieceType.ROOK, PieceType.BISHOP, PieceType.KNIGHT)
+                listOf(ChessPieceType.QUEEN, ChessPieceType.ROOK, ChessPieceType.BISHOP, ChessPieceType.KNIGHT)
                     .forEach { pieceType ->
                         IconButton(onClick = { onMoveSelected(baseMoveUci + pieceType.toPromotionString()) }) {
                             Image(
@@ -427,29 +409,29 @@ private fun PromotionDialog(
 
 @Composable
 private fun GameOverDialog(
-    gameResult: GameResult,
+    gameResult: ChessGameResult,
     onDismiss: () -> Unit,
 ) {
     val title =
         when (gameResult) {
-            is GameResult.Win -> {
+            is ChessGameResult.Win -> {
                 val winner =
                     gameResult.winner.name
                         .lowercase()
                         .replaceFirstChar { it.uppercase() }
                 "$winner wins!"
             }
-            is GameResult.Draw -> "Draw"
+            is ChessGameResult.Draw -> "Draw"
             else -> "Game Over"
         }
 
     val message =
         when (gameResult) {
-            is GameResult.Win -> "Checkmate"
-            GameResult.Draw.Stalemate -> "Stalemate"
-            GameResult.Draw.ThreefoldRepetition -> "Threefold Repetition"
-            GameResult.Draw.FiftyMoveRule -> "Fifty-move Rule"
-            GameResult.Draw.InsufficientMaterial -> "Insufficient Material"
+            is ChessGameResult.Win -> "Checkmate"
+            ChessGameResult.Draw.Stalemate -> "Stalemate"
+            ChessGameResult.Draw.ThreefoldRepetition -> "Threefold Repetition"
+            ChessGameResult.Draw.FiftyMoveRule -> "Fifty-move Rule"
+            ChessGameResult.Draw.InsufficientMaterial -> "Insufficient Material"
             else -> ""
         }
 
