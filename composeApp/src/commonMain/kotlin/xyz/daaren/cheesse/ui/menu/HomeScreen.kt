@@ -41,10 +41,10 @@ import cheesse.composeapp.generated.resources.arrow_back
 import cheesse.composeapp.generated.resources.cheesse_icon
 import cheesse.composeapp.generated.resources.github
 import cheesse.composeapp.generated.resources.screen_rotation_alt
-import io.github.alluhemanth.chess.core.piece.PieceType
 import kotlinx.coroutines.flow.collectLatest
 import org.jetbrains.compose.resources.painterResource
 import xyz.daaren.cheesse.api.GameColorPreference
+import xyz.daaren.cheesse.domain.chess.ChessPieceType
 import xyz.daaren.cheesse.ui.game.GameScreen
 import xyz.daaren.cheesse.ui.game.getIcon
 import xyz.daaren.cheesse.ui.settings.SettingsScreen
@@ -189,7 +189,7 @@ class HomeScreen : Screen {
 
     @Composable
     private fun PreloadIcons() {
-        PieceType.entries.forEach {
+        ChessPieceType.entries.forEach {
             painterResource(it.getIcon())
         }
         painterResource(Res.drawable.arrow_back)

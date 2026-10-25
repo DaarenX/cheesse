@@ -8,6 +8,8 @@ import org.kodein.di.instance
 import xyz.daaren.cheesse.data.ChessServerService
 import xyz.daaren.cheesse.data.ChessServerServiceImpl
 import xyz.daaren.cheesse.data.GameSession
+import xyz.daaren.cheesse.domain.chess.ChessEngineAdapter
+import xyz.daaren.cheesse.domain.chess.DefaultChessEngineAdapter
 import xyz.daaren.cheesse.ui.game.GameScreenModel
 import xyz.daaren.cheesse.ui.game.GameScreenModelApi
 import xyz.daaren.cheesse.ui.menu.HomeScreenModel
@@ -17,8 +19,11 @@ import xyz.daaren.cheesse.ui.settings.SettingsViewModelApi
 
 val dependencyInjection =
     DI {
+        bindSingleton<ChessEngineAdapter> { DefaultChessEngineAdapter() }
         bindSingleton<ChessServerService> { ChessServerServiceImpl() }
-        bindFactory<GameSession, GameScreenModelApi> { session -> GameScreenModel(session) }
+        bindFactory<GameSession, GameScreenModelApi> { session ->
+            GameScreenModel(session, chessEngineAdapter = instance())
+        }
         bindProvider<HomeScreenModelApi> { HomeScreenModel(chessServerService = instance()) }
         bindProvider<SettingsViewModelApi> { SettingsViewModel(chessServerService = instance()) }
     }

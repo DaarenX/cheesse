@@ -69,7 +69,6 @@ kotlin {
             implementation(libs.kodein.di)
             implementation(libs.kodein.di.framework.compose)
             implementation(libs.voyager.kodein)
-            implementation(libs.chess.lib)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.websockets)
             implementation(libs.ktor.client.content.negotiation)
@@ -77,6 +76,7 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.jvm.kotlinx.coroutines.test)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)

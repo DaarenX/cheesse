@@ -23,14 +23,11 @@
 - custom chess piece icons
 
 ## Server
-- encapsule chess engine in chessengineadapter
-- global exception handler and custom exceptions
+- websocket disconnection handling
+- remove game sessions after some time
 - resigning
 - time constraints
 - a lot of tests
-- remove game sessions after some time
-- draw-by-3-fold tracking (store and load move history instead of only fen)
-- websocket disconnection handling
 - redis for lobby creation
 - game status in db
 - lobby shareable link

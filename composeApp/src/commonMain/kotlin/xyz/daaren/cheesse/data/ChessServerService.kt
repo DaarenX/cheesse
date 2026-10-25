@@ -51,9 +51,10 @@ class ChessServerServiceImpl : ChessServerService {
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun updateBaseUrl(url: String) {
-        _serverUrl.value = url
+        val normalized = normalizeBaseUrl(url)
+        _serverUrl.value = normalized
         httpClient.close()
-        httpClient = createHttpClient(url)
+        httpClient = createHttpClient(normalized)
     }
 
     override suspend fun connectToGameSession(
@@ -65,8 +66,9 @@ class ChessServerServiceImpl : ChessServerService {
 
         repositoryScope.launch {
             try {
-                val wsProtocol = if (_serverUrl.value.startsWith("https")) "wss" else "ws"
-                val baseUrlWithoutProtocol = _serverUrl.value.substringAfter("://")
+                val currentUrl = normalizeBaseUrl(_serverUrl.value)
+                val wsProtocol = if (currentUrl.startsWith("https")) "wss" else "ws"
+                val baseUrlWithoutProtocol = currentUrl.substringAfter("://")
                 val wsUrl = "$wsProtocol://$baseUrlWithoutProtocol/ws/game-session/$id?playerToken=$playerToken"
 
                 httpClient.webSocket(wsUrl) {
@@ -109,4 +111,6 @@ class ChessServerServiceImpl : ChessServerService {
                 contentType(ContentType.Application.Json)
                 setBody(JoinGameRequest(token))
             }.body()
+
+    private fun normalizeBaseUrl(url: String): String = url.trim().trimEnd('/')
 }

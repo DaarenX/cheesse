@@ -11,6 +11,8 @@ data class GameEntity(
     @Id val id: Long? = null,
     val fen: String = START_POSITION_FEN,
     val pgn: String = "",
+    val startFen: String = START_POSITION_FEN,
+    val moveHistory: String = "",
     val joinToken: UUID,
     val whitePlayerId: Long? = null,
     val whitePlayerToken: UUID? = null,

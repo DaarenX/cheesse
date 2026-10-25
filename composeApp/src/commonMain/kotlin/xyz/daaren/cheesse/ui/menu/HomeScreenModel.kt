@@ -2,6 +2,9 @@ package xyz.daaren.cheesse.ui.menu
 
 import cafe.adriel.voyager.core.model.screenModelScope
 import io.ktor.client.plugins.ResponseException
+import io.ktor.util.logging.KtorSimpleLogger
+import io.ktor.util.logging.error
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,6 +65,7 @@ class HomeScreenModel(
             }.onSuccess { session ->
                 startWaitingForOpponent(session)
             }.onFailure { exception ->
+                logger.error("Could not create game", exception)
                 internalUiState.update {
                     it.copy(
                         isLoading = false,
@@ -95,6 +99,7 @@ class HomeScreenModel(
             }.onSuccess { session ->
                 startWaitingForOpponent(session)
             }.onFailure { exception ->
+                logger.error("Could not join game", exception)
                 internalUiState.update {
                     it.copy(
                         isLoading = false,
@@ -122,14 +127,34 @@ class HomeScreenModel(
     private fun startWaitingForOpponent(session: MultiplayerGameSession) {
         waitForOpponentJob =
             screenModelScope.launch {
-                session.gameSessionConnection.updates
-                    .filterIsInstance<ServerMessage.GameStart>()
-                    .first()
+                try {
+                    session.gameSessionConnection.updates
+                        .filterIsInstance<ServerMessage.GameStart>()
+                        .first()
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (exception: Exception) {
+                    onWaitingForOpponentFailed(exception)
+                    return@launch
+                }
                 internalUiState.update { it.copy(isLoading = false, errorMessage = null, waitingLobby = null) }
                 internalGameStartEvents.emit(session)
             }
     }
+
+    private fun onWaitingForOpponentFailed(exception: Exception) {
+        logger.error("Lost connection while waiting for opponent", exception)
+        internalUiState.update {
+            it.copy(
+                isLoading = false,
+                waitingLobby = null,
+                errorMessage = exception.asReadableMessage("Lost connection while waiting for opponent"),
+            )
+        }
+    }
 }
+
+private val logger = KtorSimpleLogger("xyz.daaren.cheesse.ui.menu.HomeScreenModel")
 
 private fun Throwable.asReadableMessage(defaultMessage: String): String =
     when (this) {

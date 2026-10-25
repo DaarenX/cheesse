@@ -25,6 +25,9 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+//        mavenLocal {
+//            mavenContent { includeGroup("xyz.daaren") }
+//        }
     }
 }
 

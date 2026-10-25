@@ -1,6 +1,5 @@
 package xyz.daaren.cheesse
 
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
@@ -8,10 +7,9 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.test.web.reactive.server.WebTestClient
-import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
-import xyz.daaren.cheesse.api.ClientMessage
+import org.testcontainers.postgresql.PostgreSQLContainer
 import xyz.daaren.cheesse.api.CreateGameRequest
 import xyz.daaren.cheesse.api.CreateGameResponse
 import xyz.daaren.cheesse.api.GameColorPreference
@@ -19,11 +17,6 @@ import xyz.daaren.cheesse.api.JoinGameRequest
 import xyz.daaren.cheesse.api.JoinGameResponse
 import xyz.daaren.cheesse.api.PlayerColor
 import xyz.daaren.cheesse.api.ServerMessage
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.WebSocket
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionStage
 import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -118,31 +111,20 @@ class GameAuthIntegrationTest {
         val joinResponse = joinGame(createResponse.joinToken)
 
         val unauthorizedClose =
-            exchangeWebSocketMessage(
-                gameId = createResponse.gameId,
-                playerToken = "invalid-token",
-                payload = movePayload("e2e4"),
-            )
+            exchangeWebSocketMessage(port, gamePath(createResponse.gameId, "invalid-token"), movePayload("e2e4"))
         assertTrue(unauthorizedClose.startsWith("CLOSE:1008"), unauthorizedClose)
 
         val wrongTurnMessage =
-            exchangeWebSocketMessage(
-                gameId = createResponse.gameId,
-                playerToken = joinResponse.playerToken,
-                payload = movePayload("e7e5"),
-            )
+            exchangeWebSocketMessage(port, gamePath(createResponse.gameId, joinResponse.playerToken), movePayload("e7e5"))
         assertTrue(wrongTurnMessage.contains("It is not your turn"), wrongTurnMessage)
 
         val validMoveMessage =
-            exchangeWebSocketMessage(
-                gameId = createResponse.gameId,
-                playerToken = createResponse.playerToken,
-                payload = movePayload("e2e4"),
-            )
+            exchangeWebSocketMessage(port, gamePath(createResponse.gameId, createResponse.playerToken), movePayload("e2e4"))
         assertTrue(
             validMoveMessage.contains("\"fen\":\"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq"),
             validMoveMessage,
         )
+        assertTrue(validMoveMessage.contains("\"movesUci\":[\"e2e4\"]"), validMoveMessage)
         assertFalse(validMoveMessage.contains("joinToken"))
         assertFalse(validMoveMessage.contains("playerToken"))
     }
@@ -150,9 +132,9 @@ class GameAuthIntegrationTest {
     @Test
     fun `websocket broadcasts game start when both players are connected`() {
         val createResponse = createGame()
-        val creatorSocket = openWebSocket(createResponse.gameId, createResponse.playerToken)
+        val creatorSocket = openWebSocket(port, gamePath(createResponse.gameId, createResponse.playerToken))
         val joinResponse = joinGame(createResponse.joinToken)
-        val joinerSocket = openWebSocket(createResponse.gameId, joinResponse.playerToken)
+        val joinerSocket = openWebSocket(port, gamePath(createResponse.gameId, joinResponse.playerToken))
 
         try {
             assertEquals(
@@ -197,84 +179,5 @@ class GameAuthIntegrationTest {
             .returnResult()
             .responseBody!!
 
-    private fun exchangeWebSocketMessage(
-        gameId: Long,
-        playerToken: String,
-        payload: String,
-    ): String {
-        val connection = openWebSocket(gameId, playerToken, payload)
-
-        return try {
-            connection.firstMessage.get(5, TimeUnit.SECONDS)
-        } finally {
-            connection.webSocket.abort()
-        }
-    }
-
-    private fun openWebSocket(
-        gameId: Long,
-        playerToken: String,
-        initialPayload: String? = null,
-    ): WebSocketConnection {
-        val firstMessage = CompletableFuture<String>()
-        val webSocket =
-            HttpClient
-                .newHttpClient()
-                .newWebSocketBuilder()
-                .buildAsync(
-                    URI.create("ws://localhost:$port/ws/game-session/$gameId?playerToken=$playerToken"),
-                    object : WebSocket.Listener {
-                        private val buffer = StringBuilder()
-
-                        override fun onOpen(webSocket: WebSocket) {
-                            webSocket.request(1)
-                            initialPayload?.let { webSocket.sendText(it, true) }
-                        }
-
-                        override fun onText(
-                            webSocket: WebSocket,
-                            data: CharSequence,
-                            last: Boolean,
-                        ): CompletionStage<*> {
-                            buffer.append(data)
-                            if (last && !firstMessage.isDone) {
-                                firstMessage.complete(buffer.toString())
-                            }
-                            webSocket.request(1)
-                            return CompletableFuture.completedFuture(null)
-                        }
-
-                        override fun onClose(
-                            webSocket: WebSocket,
-                            statusCode: Int,
-                            reason: String,
-                        ): CompletionStage<*> {
-                            if (!firstMessage.isDone) {
-                                firstMessage.complete("CLOSE:$statusCode:$reason")
-                            }
-                            return CompletableFuture.completedFuture(null)
-                        }
-
-                        override fun onError(
-                            webSocket: WebSocket,
-                            error: Throwable,
-                        ) {
-                            if (!firstMessage.isDone) {
-                                firstMessage.completeExceptionally(error)
-                            }
-                        }
-                    },
-                ).get(5, TimeUnit.SECONDS)
-
-        return WebSocketConnection(webSocket, firstMessage)
-    }
-
-    private fun movePayload(moveUci: String): String = json.encodeToString<ClientMessage>(ClientMessage.Move(moveUci))
-
     private fun webTestClient(): WebTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:$port").build()
-
-    private data class WebSocketConnection(
-        val webSocket: WebSocket,
-        val firstMessage: CompletableFuture<String>,
-    )
 }

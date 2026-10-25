@@ -18,6 +18,13 @@ java {
     }
 }
 
+// Spring Boot's BOM pins kotlinx-coroutines to 1.10.2, which would downgrade the transitive
+// coroutines-core-jvm/-reactive below the 1.11.0 core/reactor we declare (NoSuchMethodError at runtime).
+// Override the managed version so the whole coroutines family resolves to the catalog version.
+extra["kotlin-coroutines.version"] =
+    libs.versions.kotlinx.coroutines
+        .get()
+
 dependencies {
     implementation(projects.shared)
     implementation(libs.spring.boot.starter.data.r2dbc)

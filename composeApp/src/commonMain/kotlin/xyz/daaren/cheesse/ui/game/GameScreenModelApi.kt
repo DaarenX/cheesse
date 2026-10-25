@@ -1,12 +1,12 @@
 package xyz.daaren.cheesse.ui.game
 
 import cafe.adriel.voyager.core.model.ScreenModel
-import io.github.alluhemanth.chess.core.board.Square
-import io.github.alluhemanth.chess.core.game.GameResult
-import io.github.alluhemanth.chess.core.move.Move
-import io.github.alluhemanth.chess.core.piece.Piece
 import kotlinx.coroutines.flow.StateFlow
 import xyz.daaren.cheesse.api.PlayerColor
+import xyz.daaren.cheesse.domain.chess.ChessGameResult
+import xyz.daaren.cheesse.domain.chess.ChessMove
+import xyz.daaren.cheesse.domain.chess.ChessPiece
+import xyz.daaren.cheesse.domain.chess.ChessSquare
 
 interface GameScreenModelApi : ScreenModel {
     val gameState: StateFlow<GameState>
@@ -14,10 +14,10 @@ interface GameScreenModelApi : ScreenModel {
     fun makeMove(moveUci: String)
 
     data class GameState(
-        val piecePositions: List<Pair<Piece, Square>>,
-        val legalMoves: List<Move>,
+        val piecePositions: List<Pair<ChessPiece, ChessSquare>>,
+        val legalMoves: List<ChessMove>,
         val turn: PlayerColor,
-        val capturedPieces: List<Piece>,
-        val gameResult: GameResult = GameResult.Ongoing,
+        val capturedPieces: List<ChessPiece>,
+        val gameResult: ChessGameResult = ChessGameResult.Ongoing,
     )
 }
