@@ -1,24 +1,15 @@
 package xyz.daaren.cheesse.ui.menu
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedIconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -31,23 +22,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.kodein.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cheesse.composeapp.generated.resources.Res
-import cheesse.composeapp.generated.resources.arrow_back
-import cheesse.composeapp.generated.resources.cheesse_icon
 import cheesse.composeapp.generated.resources.github
-import cheesse.composeapp.generated.resources.screen_rotation_alt
 import kotlinx.coroutines.flow.collectLatest
 import org.jetbrains.compose.resources.painterResource
-import xyz.daaren.cheesse.api.GameColorPreference
-import xyz.daaren.cheesse.domain.chess.ChessPieceType
+import xyz.daaren.cheesse.ui.components.CheeseHolesBackground
 import xyz.daaren.cheesse.ui.game.GameScreen
-import xyz.daaren.cheesse.ui.game.getIcon
+import xyz.daaren.cheesse.ui.game.board.PreloadIcons
 import xyz.daaren.cheesse.ui.settings.SettingsScreen
+
+internal enum class HomeDialog { None, Create, Join }
 
 class HomeScreen : Screen {
     @Composable
@@ -56,259 +44,76 @@ class HomeScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel<HomeScreenModelApi>()
         val uiState by screenModel.uiState.collectAsState()
-        var showJoinGameDialog by remember { mutableStateOf(false) }
-        var showCreateGameDialog by remember { mutableStateOf(false) }
+        var dialog by remember { mutableStateOf(HomeDialog.None) }
+        val snackbarHostState = remember { SnackbarHostState() }
 
         LaunchedEffect(screenModel) {
             screenModel.gameStartEvents.collectLatest { session ->
-                showJoinGameDialog = false
-                showCreateGameDialog = false
+                dialog = HomeDialog.None
                 navigator.push(GameScreen(session))
             }
         }
+        ErrorSnackbar(uiState, dialog, snackbarHostState, screenModel::dismissError)
+        HomeDialogs(dialog, uiState, screenModel) { dialog = it }
 
-        if (showJoinGameDialog) {
-            JoinGameDialog(
-                isLoading = uiState.isLoading,
-                errorMessage = uiState.errorMessage,
-                onDismissRequest = { showJoinGameDialog = false },
-                onJoinGameButton = { screenModel.joinGame(it) },
-                onDismissError = screenModel::dismissError,
+        val actions =
+            HomeActions(
+                onPlayLocal = screenModel::createLocalGame,
+                onCreateOnline = { dialog = HomeDialog.Create },
+                onJoin = { dialog = HomeDialog.Join },
+                onSettings = { navigator.push(SettingsScreen()) },
+                onCancelLobby = screenModel::cancelWaiting,
             )
-        }
-        if (showCreateGameDialog) {
-            CreateGameDialog(
-                isLoading = uiState.isLoading,
-                onDismissRequest = { showCreateGameDialog = false },
-                onCreateGameButton = {
-                    showCreateGameDialog = false
-                    screenModel.createGame(it)
-                },
-            )
-        }
-        Box(Modifier.fillMaxSize()) {
-            val waitingLobby = uiState.waitingLobby
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.align(Alignment.Center),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Image(
-                        painterResource(Res.drawable.cheesse_icon),
-                        contentDescription = "Cheesse Icon",
-                        modifier = Modifier.size(48.dp),
-                    )
-                    Text(
-                        text = " Cheesse",
-                        fontSize = 32.sp,
-                    )
-                }
-
-                if (waitingLobby == null) {
-                    Column(
-                        Modifier.align(Alignment.CenterHorizontally),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Button(
-                            onClick = { screenModel.createLocalGame() },
-                            enabled = !uiState.isLoading,
-                        ) {
-                            Text("New local Game")
-                        }
-                        Button(
-                            onClick = { showCreateGameDialog = true },
-                            enabled = !uiState.isLoading,
-                        ) {
-                            Text("New Game")
-                        }
-                        Button(
-                            onClick = { showJoinGameDialog = true },
-                            enabled = !uiState.isLoading,
-                        ) {
-                            Text("Join Game")
-                        }
-                        Button(
-                            onClick = { navigator.push(SettingsScreen()) },
-                            enabled = !uiState.isLoading,
-                        ) {
-                            Text("Settings")
-                        }
-                    }
-                } else {
-                    WaitingForOpponent(
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
-                        waitingLobby = waitingLobby,
-                        onCancel = screenModel::cancelWaiting,
-                    )
-                }
-                Spacer(Modifier.weight(1f))
-            }
-
-            val uriHandler = LocalUriHandler.current
-            IconButton(
-                onClick = { uriHandler.openUri("https://github.com/DaarenX/cheesse") },
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 16.dp),
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.github),
-                    contentDescription = "GitHub Repository",
-                    modifier = Modifier.size(48.dp),
-                )
-            }
-
-            AnimatedVisibility(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
-                visible = uiState.errorMessage != null && uiState.waitingLobby == null,
-            ) {
-                Card {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = uiState.errorMessage.orEmpty(),
-                            color = Color.Red,
-                        )
-                        Button(onClick = screenModel::dismissError) {
-                            Text("Dismiss")
-                        }
-                    }
-                }
-            }
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            containerColor = Color.Transparent,
+        ) { padding ->
+            HomeLayout(uiState, actions, padding)
         }
     }
+}
 
-    @Composable
-    private fun PreloadIcons() {
-        ChessPieceType.entries.forEach {
-            painterResource(it.getIcon())
-        }
-        painterResource(Res.drawable.arrow_back)
-        painterResource(Res.drawable.screen_rotation_alt)
+@Composable
+private fun HomeLayout(
+    uiState: HomeScreenModelApi.HomeUiState,
+    actions: HomeActions,
+    padding: PaddingValues,
+) {
+    Box(Modifier.fillMaxSize()) {
+        CheeseHolesBackground()
+        HomeContent(uiState, actions, Modifier.padding(padding))
+        GitHubLink(Modifier.align(Alignment.BottomEnd).padding(padding).padding(16.dp))
     }
+}
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    private fun CreateGameDialog(
-        isLoading: Boolean,
-        onDismissRequest: () -> Unit,
-        onCreateGameButton: (GameColorPreference) -> Unit,
+/** Errors outside the join dialog appear as a snackbar; the join dialog shows its own inline. */
+@Composable
+private fun ErrorSnackbar(
+    uiState: HomeScreenModelApi.HomeUiState,
+    dialog: HomeDialog,
+    hostState: SnackbarHostState,
+    onDismiss: () -> Unit,
+) {
+    val message = uiState.errorMessage.takeIf { dialog != HomeDialog.Join && uiState.waitingLobby == null }
+    LaunchedEffect(message) {
+        if (message != null) {
+            hostState.showSnackbar(message, actionLabel = "Dismiss", withDismissAction = false)
+            onDismiss()
+        }
+    }
+}
+
+@Composable
+private fun GitHubLink(modifier: Modifier = Modifier) {
+    val uriHandler = LocalUriHandler.current
+    OutlinedIconButton(
+        onClick = { uriHandler.openUri("https://github.com/DaarenX/cheesse") },
+        modifier = modifier,
     ) {
-        BasicAlertDialog(onDismissRequest = onDismissRequest) {
-            Card {
-                Column(
-                    modifier = Modifier.padding(6.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-                ) {
-                    var selectedColorPreference by remember { mutableStateOf(GameColorPreference.RANDOM) }
-                    Text("Color")
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Button(
-                            onClick = { selectedColorPreference = GameColorPreference.WHITE },
-                            border = if (selectedColorPreference == GameColorPreference.WHITE) BorderStroke(2.dp, Color.Black) else null,
-                        ) {
-                            Text("WHITE")
-                        }
-                        Button(
-                            onClick = { selectedColorPreference = GameColorPreference.RANDOM },
-                            border = if (selectedColorPreference == GameColorPreference.RANDOM) BorderStroke(2.dp, Color.Black) else null,
-                        ) {
-                            Text("RANDOM")
-                        }
-
-                        Button(
-                            onClick = { selectedColorPreference = GameColorPreference.BLACK },
-                            border = if (selectedColorPreference == GameColorPreference.BLACK) BorderStroke(2.dp, Color.Black) else null,
-                        ) {
-                            Text("BLACK")
-                        }
-                    }
-                    Button(
-                        onClick = { onCreateGameButton(selectedColorPreference) },
-                        enabled = !isLoading,
-                    ) {
-                        Text(if (isLoading) "CREATING..." else "CREATE GAME")
-                    }
-                }
-            }
-        }
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    private fun JoinGameDialog(
-        isLoading: Boolean,
-        errorMessage: String?,
-        onDismissRequest: () -> Unit,
-        onJoinGameButton: (String) -> Unit,
-        onDismissError: () -> Unit,
-    ) {
-        BasicAlertDialog(onDismissRequest = onDismissRequest) {
-            Card {
-                Column(
-                    modifier = Modifier.padding(6.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-                ) {
-                    var input by remember { mutableStateOf("") }
-                    TextField(
-                        input,
-                        onValueChange = { input = it },
-                        label = { Text("Token") },
-                    )
-                    if (errorMessage != null) {
-                        Text(errorMessage, color = Color.Red)
-                        Button(onClick = onDismissError) {
-                            Text("Dismiss")
-                        }
-                    }
-                    Button(
-                        onClick = { onJoinGameButton(input) },
-                        enabled = !isLoading,
-                    ) {
-                        Text(if (isLoading) "JOINING..." else "JOIN")
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun WaitingForOpponent(
-        modifier: Modifier = Modifier,
-        waitingLobby: HomeScreenModelApi.WaitingLobby,
-        onCancel: () -> Unit,
-    ) {
-        Card(modifier = modifier) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text("Lobby created")
-                Text("Share this join token:")
-                Text(waitingLobby.joinToken)
-                if (waitingLobby.isOpponentConnected) {
-                    Text("Opponent joined. Starting game...")
-                } else {
-                    Text("Waiting for opponent...")
-                }
-                Button(onClick = onCancel) {
-                    Text("Cancel")
-                }
-            }
-        }
+        Icon(
+            painter = painterResource(Res.drawable.github),
+            contentDescription = "GitHub repository",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

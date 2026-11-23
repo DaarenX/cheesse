@@ -140,6 +140,19 @@ The client UI is powered by Voyager `ScreenModel`:
 
 ---
 
+## 8.5.1 UI Design System
+
+All client styling goes through the Cheesse design system (ADR-008):
+
+1. **Tokens, not literals**: Screens read colors from `MaterialTheme.colorScheme` and board colors from `CheesseTheme.boardColors`. Hex values live only in `ui/theme/Color.kt` and `BoardColors.kt`.
+2. **Dark mode**: `CheesseTheme` follows `isSystemInDarkTheme()` and swaps both the Material color scheme and the `BoardColors`.
+3. **Typography**: Nunito is bundled in `composeResources/font` (license in `composeResources/files/nunito_OFL.txt`), so all targets render identical text.
+4. **Motion**: Animations use the shared specs in `Motion` (piece moves, snap-back, button press, dialog entrance, color changes). Screen changes slide and fade, with the direction following Voyager's push/pop.
+5. **Components**: Screens use the components in `ui/components/` instead of styling Material widgets inline.
+6. **Engine data for highlights**: The last move and the checked king's square come from `ChessBoardState.lastMove` / `checkedKingSquare`, computed by `DefaultChessEngineAdapter`. The UI never inspects the engine directly.
+
+---
+
 ## 8.6 Persistence & Schema Evolution
 
 Database persistence is handled by Spring Data R2DBC against a single normalized table:

@@ -24,12 +24,16 @@ Cheesse is a modern, cross-platform multiplayer chess application built on Kotli
   - Verified move updates are broadcast to both clients instantly as FEN snapshots.
 
 - **Interactive Chessboard UI**:
-  - Drag-and-drop piece manipulation with responsive pixel-to-board coordinate mapping.
-  - Move target indicator dots (circular previews for silent moves, larger rings for captures).
+  - Drag-and-drop piece manipulation with responsive pixel-to-board coordinate mapping; rejected drops spring back to their square.
+  - Move target indicators that pop in on pick-up (dots for silent moves, rings for captures).
+  - Highlights for the last move, the picked-up piece and a king in check.
+  - Animated moves: the opponent's last move (including the castling rook) glides from its origin square.
+  - Player bars showing each side's captured pieces, material lead and an animated turn indicator.
   - Manual board perspective rotation (rotate board 180° for White or Black perspective).
   - Pawn promotion piece selection dialog (Queen, Rook, Bishop, Knight).
   - Game over dialog announcing outcome (Checkmate with winner, Stalemate, Threefold repetition, Fifty-move rule, Insufficient material).
   - Configurable server URL in application settings with dynamic client reconnection.
+  - Cheese-themed design system with light and dark mode and a bundled Nunito font (see ADR-008).
 
 ---
 

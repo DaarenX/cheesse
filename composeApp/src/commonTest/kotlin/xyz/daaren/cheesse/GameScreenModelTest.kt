@@ -5,6 +5,7 @@ import xyz.daaren.cheesse.api.PlayerColor
 import xyz.daaren.cheesse.data.GameSession
 import xyz.daaren.cheesse.domain.chess.ChessGameHistory
 import xyz.daaren.cheesse.domain.chess.ChessGameResult
+import xyz.daaren.cheesse.domain.chess.ChessSquare
 import xyz.daaren.cheesse.domain.chess.DefaultChessEngineAdapter
 import xyz.daaren.cheesse.ui.game.GameScreenModel
 import kotlin.test.Test
@@ -69,5 +70,16 @@ class GameScreenModelTest {
         val state = screenModel.gameState.value
         assertEquals(ChessGameResult.Draw.ThreefoldRepetition, state.gameResult)
         assertTrue(state.legalMoves.isEmpty())
+    }
+
+    @Test
+    fun `game state exposes last move and checked king`() {
+        val screenModel = GameScreenModel(FakeGameSession(), DefaultChessEngineAdapter())
+
+        listOf("e2e4", "f7f6", "d1h5").forEach(screenModel::makeMove)
+
+        val state = screenModel.gameState.value
+        assertEquals("d1h5", state.lastMove?.uci)
+        assertEquals(ChessSquare.fromString("e8"), state.checkedKingSquare)
     }
 }

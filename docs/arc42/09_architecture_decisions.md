@@ -101,3 +101,21 @@ This section records significant architectural decisions (ADRs) made in Cheesse,
   - *Positive*: Backwards-compatible protocol: older clients ignore the new fields, and newer clients fall back to the FEN when talking to an older server.
   - *Negative*: Each engine call replays the game (see R-05), and `ServerMessage.Move` grows with game length.
   - *Negative*: Games already in progress at migration time only count repetitions from their position at migration; `chess-core`'s PGN generation assumes the standard start position.
+
+---
+
+## ADR-008: Use a Custom Cheesse Design System on Material 3 with a Bundled Font
+
+- **Status**: Proposed
+- **Date**: 2026-11-20
+- **Context**: The client used the bare default `MaterialTheme`, with no dark mode and colors hardcoded in each screen (chess.com-style green board, black/white tints). Text used each platform's system font, so Android, iOS, desktop and web looked different (QS-06). The app had no visual identity beyond its cheese-crown logo.
+- **Options Considered**:
+  1. Keep the default Material theme and fix hardcoded colors locally: no new code, but no identity and no parity of typography.
+  2. Use a third-party design system or UI kit: fast, but generic, and it adds a dependency that must support all four KMP targets.
+  3. Build a small design system on top of Material 3: custom color schemes, typography, shapes and motion tokens in `ui/theme`, reusable components in `ui/components`, and a bundled OFL font (Nunito) in `composeResources/font`.
+- **Decision**: Use option 3. `CheesseTheme` provides light and dark color schemes derived from the logo (following `isSystemInDarkTheme()`), Nunito typography, rounded shapes, and board colors through `LocalBoardColors`. Shared animation specs live in `Motion`. Screens use `CheesseButton`, `CheesseCard`, `CheesseDialog`, `SegmentedChoice` and the other components instead of styling Material widgets inline.
+- **Consequences**:
+  - *Positive*: Consistent look, typography and motion on every target, and dark mode support.
+  - *Positive*: Colors and timings are changed in one place, and screens contain less styling code.
+  - *Negative*: The four Nunito weights add roughly 530 KB to every client bundle (most noticeable for the web build).
+  - *Negative*: Custom components must be kept in step with Material 3 updates.

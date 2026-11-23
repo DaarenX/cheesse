@@ -3,6 +3,7 @@ package xyz.daaren.cheesse.domain.chess
 import xyz.daaren.cheesse.api.PlayerColor
 import xyz.daaren.chess.core.ChessGame
 import xyz.daaren.chess.core.exception.ChessCoreException
+import xyz.daaren.chess.core.game.GameUtils
 
 class DefaultChessEngineAdapter : ChessEngineAdapter {
     override fun activePlayerColor(fen: String): PlayerColor {
@@ -38,7 +39,16 @@ class DefaultChessEngineAdapter : ChessEngineAdapter {
             turn = chessGame.getCurrentPlayer().toPlayerColor(),
             capturedPieces = capturedPieces(pieces.map { it.first }),
             gameResult = gameResult,
+            lastMove = chessGame.getMoveHistory().lastOrNull()?.toDomain(),
+            checkedKingSquare = chessGame.checkedKingSquare(pieces),
         )
+    }
+
+    private fun ChessGame.checkedKingSquare(pieces: List<Pair<ChessPiece, ChessSquare>>): ChessSquare? {
+        val current = getCurrentPlayer()
+        if (!GameUtils.isKingInCheck(current, getBoard())) return null
+        val color = current.toPlayerColor()
+        return pieces.firstOrNull { (piece, _) -> piece.type == ChessPieceType.KING && piece.color == color }?.second
     }
 
     // Loading only the latest FEN would drop the position history that repetition detection needs.

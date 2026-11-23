@@ -53,6 +53,8 @@ class GameScreenModel(
             turn = boardState.turn,
             capturedPieces = boardState.capturedPieces,
             gameResult = boardState.gameResult,
+            lastMove = boardState.lastMove,
+            checkedKingSquare = boardState.checkedKingSquare,
         )
     }
 }

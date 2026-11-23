@@ -67,7 +67,7 @@ graph TD
 The `:shared` module provides the shared contracts, engine abstraction, and domain models between clients and backend:
 
 - **`xyz.daaren.cheesse.Constants`**: Defines global constants such as default `SERVER_PORT = 8080` and `DEFAULT_FEN`.
-- **`xyz.daaren.cheesse.domain.chess.ChessEngineAdapter`**: Multiplatform interface and implementation (`DefaultChessEngineAdapter`) encapsulating `chess-core` operations (`applyMove`, `activePlayerColor`, `getBoardState`). `applyMove` and `getBoardState` take a `ChessGameHistory` (start FEN + UCI moves) and replay it, so draw rules that depend on earlier positions (threefold repetition) are evaluated. Moves after the game has ended are rejected with `ChessMoveResult.GameOver`.
+- **`xyz.daaren.cheesse.domain.chess.ChessEngineAdapter`**: Multiplatform interface and implementation (`DefaultChessEngineAdapter`) encapsulating `chess-core` operations (`applyMove`, `activePlayerColor`, `getBoardState`). `applyMove` and `getBoardState` take a `ChessGameHistory` (start FEN + UCI moves) and replay it, so draw rules that depend on earlier positions (threefold repetition) are evaluated. Moves after the game has ended are rejected with `ChessMoveResult.GameOver`. `getBoardState` also reports the last move and, when the side to move is in check, its king's square (used for board highlights).
 - **`xyz.daaren.cheesse.domain.chess.ChessModels`**: Clean domain types (`ChessPiece`, `ChessPieceType`, `ChessSquare`, `ChessMove`, `ChessGameResult`, `ChessBoardState`, `ChessMoveResult`) isolating presentation layers from third-party engine classes.
 - **`xyz.daaren.cheesse.api.GameRequests`**:
   - `CreateGameRequest`: Encapsulates host color preference (`WHITE`, `BLACK`, `RANDOM`).
@@ -156,9 +156,18 @@ graph TD
 ```
 
 - **Screens**:
-  - `HomeScreen`: Displays menu options (local game, new online game dialog, join game dialog, settings button, waiting lobby display).
-  - `GameScreen`: Renders the chessboard canvas, coordinate labels, piece icons, drag gestures, move target indicators, and promotion/game-over dialogs.
+  - `HomeScreen` (`ui/menu/`): Hero with logo, action card (local game, create online game, join with token, settings), the create/join dialogs (`HomeDialogs.kt`), the waiting lobby (`LobbyCard.kt`), and errors as a snackbar.
+  - `GameScreen` (`ui/game/`): Lays out the board between two `PlayerBar`s (portrait) or beside them (landscape, `GameLayout.kt`), and shows the promotion and game-over dialogs (`GameDialogs.kt`).
   - `SettingsScreen`: Allows users to configure and persist the backend server URL.
+- **Board** (`ui/game/board/`):
+  - `Chessboard`: Orchestrates selection, drops and promotion; holds only UI state.
+  - `BoardBackground` / `BoardCoordinates`: Canvas drawing of squares, highlights (last move, selection, check) and labels.
+  - `BoardPiece` / `PieceGlyph`: Draggable, animated pieces drawn as outlined glyphs.
+  - `MoveHints`: Animated dots and capture rings.
+  - Pure helpers with tests: `BoardGeometry` (square offsets, castling rook origins), `DropDecision` (`resolveDrop`), `BoardDrops` (`piecePlacements`), and `CapturedMaterial` in `ui/game/`.
+- **Design system**:
+  - `ui/theme/`: `CheesseTheme`, light/dark color schemes, Nunito typography, shapes, `BoardColors` (`LocalBoardColors`) and `Motion` specs.
+  - `ui/components/`: `CheesseButton`, `CheesseCard`, `CheesseDialog`, `CheesseTopBar`, `SegmentedChoice`, `PulsingDot`, `CheeseHolesBackground`.
 - **ScreenModels**:
   - `HomeScreenModel`: Manages lobby state, token inputs, waiting room status, and navigation events.
   - `GameScreenModel`: Manages the interactive chessboard state, move legality calculation, turn enforcement, and piece capture diffing.

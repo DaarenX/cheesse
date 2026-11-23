@@ -85,6 +85,8 @@ data class ChessBoardState(
     val turn: PlayerColor,
     val capturedPieces: List<ChessPiece>,
     val gameResult: ChessGameResult = ChessGameResult.Ongoing,
+    val lastMove: ChessMove? = null,
+    val checkedKingSquare: ChessSquare? = null,
 )
 
 /**
