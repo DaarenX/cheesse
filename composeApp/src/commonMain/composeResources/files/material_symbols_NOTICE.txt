@@ -1,0 +1,23 @@
+Material Symbols notice
+
+The following icons in composeResources/drawable are based on Material Symbols
+by Google (https://github.com/google/material-design-icons), licensed under the
+Apache License, Version 2.0. A copy of the license is in
+material_symbols_LICENSE.txt.
+
+File                        Material Symbols icon
+arrow_back.xml              arrow_back
+screen_rotation_alt.xml     screen_rotation_alt
+chess_pawn.xml              chess_pawn
+chess_knight.xml            chess_knight
+chess_bishop_2.xml          chess_bishop_2
+chess_rook.xml              chess_rook
+chess_queen.xml             chess_queen
+chess_king_2.xml            chess_king_2
+ic_person.xml               person
+ic_online.xml               public
+ic_join.xml                 login
+ic_settings.xml             settings
+
+Changes: the fill color of these files was set to #000000 so the app can tint
+them, and the ic_* files were renamed.

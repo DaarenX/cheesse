@@ -5,7 +5,6 @@
 - move history
   - show general history
   - allow going back
-- show captured pieces
 - resigning
 - time constraints
 - websocket reconnection
@@ -14,12 +13,7 @@
 - fix (mac) trackpad drag bug
 
 ### Design
-- show last move as highlighted squares
-- show last move as animation
-- dialog animations
-- move preview highlighting
 - making moves without dragging
-- replace shadow / glow with outlined icon
 - custom chess piece icons
 
 ## Server

@@ -1,25 +1,11 @@
 package xyz.daaren.cheesse.ui.game
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -27,418 +13,73 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.AbsoluteAlignment
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.kodein.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cheesse.composeapp.generated.resources.Res
-import cheesse.composeapp.generated.resources.arrow_back
 import cheesse.composeapp.generated.resources.screen_rotation_alt
 import org.jetbrains.compose.resources.painterResource
 import xyz.daaren.cheesse.api.PlayerColor
 import xyz.daaren.cheesse.data.GameSession
 import xyz.daaren.cheesse.data.OfflineGameSession
 import xyz.daaren.cheesse.domain.chess.ChessGameResult
-import xyz.daaren.cheesse.domain.chess.ChessMove
-import xyz.daaren.cheesse.domain.chess.ChessPiece
-import xyz.daaren.cheesse.domain.chess.ChessPieceType
-import xyz.daaren.cheesse.domain.chess.ChessSquare
-import kotlin.math.roundToInt
+import xyz.daaren.cheesse.ui.components.CheeseHolesBackground
+import xyz.daaren.cheesse.ui.components.CheesseTopBar
 
 class GameScreen(
     val gameSession: GameSession,
 ) : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = rememberScreenModel<GameSession, GameScreenModelApi>(arg = gameSession)
         val gameState by viewModel.gameState.collectAsState()
         var boardRotation by remember { mutableStateOf(gameSession.playerColor) }
+        val isOffline = gameSession is OfflineGameSession
 
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        val text =
-                            if (gameSession is OfflineGameSession) {
-                                "Local Game"
-                            } else {
-                                "Online Game"
-                            }
-                        Text(text = text)
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { navigator.pop() }) {
-                            Icon(
-                                painter = painterResource(Res.drawable.arrow_back),
-                                contentDescription = "Back Arrow Icon",
-                            )
-                        }
-                    },
-                    actions = {
-                        Text(
-                            text = "Turn: ${gameState.turn}",
-                            modifier = Modifier.padding(end = 16.dp),
-                        )
-                        IconButton(
-                            onClick = { boardRotation = if (boardRotation == PlayerColor.WHITE) PlayerColor.BLACK else PlayerColor.WHITE },
-                        ) {
-                            Image(
-                                painter = painterResource(Res.drawable.screen_rotation_alt),
-                                contentDescription = "Rotate board icon",
-                            )
-                        }
-                    },
-                )
-            },
-        ) { paddingValues ->
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center,
-            ) {
-                Chessboard(
-                    gameState = gameState,
-                    makeMove = viewModel::makeMove,
-                    boardRotation = boardRotation,
-                )
-            }
-        }
-    }
-
-    @Composable
-    private fun Chessboard(
-        gameState: GameScreenModelApi.GameState,
-        makeMove: (String) -> Unit,
-        boardRotation: PlayerColor,
-    ) {
-        var pendingPromotionMove by remember { mutableStateOf<String?>(null) }
-
-        pendingPromotionMove?.let { it ->
-            PromotionDialog(
-                baseMoveUci = it,
-                onMoveSelected = {
-                    makeMove(it)
-                    pendingPromotionMove = null
+        GameOverPrompt(gameState.gameResult, onBackToMenu = { navigator.pop() })
+        Box {
+            CheeseHolesBackground()
+            Scaffold(
+                topBar = {
+                    CheesseTopBar(if (isOffline) "Local game" else "Online game", onBack = { navigator.pop() }) {
+                        RotateBoardButton(boardRotation) { boardRotation = boardRotation.opposite() }
+                    }
                 },
-                onDismiss = { pendingPromotionMove = null },
-            )
-        }
-
-        var showGameOverDialog by remember { mutableStateOf(false) }
-        LaunchedEffect(gameState.gameResult) {
-            if (gameState.gameResult.isOver) {
-                showGameOverDialog = true
+                containerColor = Color.Transparent,
+            ) { padding ->
+                val youColor = gameSession.playerColor.takeUnless { isOffline }
+                GameBody(GameBodyState(gameState, boardRotation, youColor), viewModel::makeMove, Modifier.padding(padding))
             }
-        }
-        if (showGameOverDialog) {
-            GameOverDialog(
-                gameResult = gameState.gameResult,
-                onDismiss = { showGameOverDialog = false },
-            )
-        }
-
-        Box(
-            modifier =
-                Modifier
-                    .aspectRatio(1f)
-                    .fillMaxWidth(),
-        ) {
-            BoxWithConstraints(Modifier.fillMaxSize(0.8f).align(Alignment.Center)) {
-                ChessBoardBackground(
-                    boardRotation,
-                    Modifier.fillMaxSize(),
-                )
-                val squareSize = minWidth / 8
-
-                // Needed to show all target squares for selected piece
-                var selectedPiece by remember { mutableStateOf<ChessSquare?>(null) }
-
-                gameState.piecePositions.forEach { (piece, square) ->
-                    val legalMoves = gameState.legalMoves.filter { it.from == square }
-
-                    DraggablePiece(
-                        modifier = Modifier.align(AbsoluteAlignment.TopLeft).size(squareSize),
-                        piece = piece,
-                        square = square,
-                        squareSize = squareSize,
-                        legalMoves = legalMoves,
-                        playerColor = boardRotation,
-                        startMovePreview = { selectedPiece = it },
-                        endMovePreview = { selectedPiece = null },
-                        onMove = makeMove,
-                        onPromotionRequested = { pendingPromotionMove = it },
-                    )
-                }
-
-                if (selectedPiece != null) {
-                    gameState.legalMoves.filter { it.from == selectedPiece }.forEach { move ->
-                        val square = move.to
-                        Canvas(
-                            modifier =
-                                Modifier
-                                    .align(AbsoluteAlignment.TopLeft)
-                                    .size(squareSize)
-                                    .offset {
-                                        val pxSize = squareSize.toPx()
-                                        IntOffset(
-                                            (pxSize * square.displayCol(boardRotation)).roundToInt(),
-                                            (pxSize * square.displayRow(boardRotation)).roundToInt(),
-                                        )
-                                    },
-                        ) {
-                            if (move.isCapture) {
-                                drawCircle(Color.Black.copy(alpha = 0.7f), radius = size.minDimension * 0.4f)
-                            } else {
-                                drawCircle(Color.Black.copy(alpha = 0.7f), radius = size.minDimension * 0.25f)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun ChessBoardBackground(
-        boardRotation: PlayerColor,
-        modifier: Modifier = Modifier,
-    ) {
-        val darkSquareColor = Color(0xFF769656)
-        val lightSquareColor = Color(0xFFEEEED2)
-        val textMeasurer = rememberTextMeasurer()
-
-        Canvas(modifier) {
-            val squareSize = size.width / 8
-            repeat(8) { row ->
-                repeat(8) { col ->
-                    val isDark = (row + col) % 2 != 0
-                    drawRect(
-                        color = if (isDark) darkSquareColor else lightSquareColor,
-                        topLeft = Offset(col * squareSize, row * squareSize),
-                        size = Size(squareSize, squareSize),
-                    )
-                    val letterPadding = 3.dp.toPx()
-                    if (row == 7) {
-                        val letter = if (boardRotation == PlayerColor.WHITE) 'a' + col else 'h' - col
-                        val textLayoutResult =
-                            textMeasurer.measure(
-                                text = letter.toString(),
-                                style = TextStyle(color = if (isDark) lightSquareColor else darkSquareColor),
-                            )
-                        val position =
-                            Offset(
-                                x = col * squareSize + letterPadding,
-                                y = size.height - textLayoutResult.size.height - letterPadding,
-                            )
-                        drawText(textLayoutResult, topLeft = position)
-                    }
-                    if (col == 7) {
-                        val letter = if (boardRotation == PlayerColor.WHITE) '8' - row else '1' + row
-                        val textLayoutResult =
-                            textMeasurer.measure(
-                                text = letter.toString(),
-                                style = TextStyle(color = if (isDark) lightSquareColor else darkSquareColor),
-                            )
-                        val position =
-                            Offset(
-                                x = size.width - textLayoutResult.size.width - letterPadding,
-                                y = row * squareSize + letterPadding,
-                            )
-                        drawText(textLayoutResult, topLeft = position)
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun DraggablePiece(
-        piece: ChessPiece,
-        square: ChessSquare,
-        squareSize: Dp,
-        legalMoves: List<ChessMove>,
-        playerColor: PlayerColor,
-        startMovePreview: (ChessSquare) -> Unit,
-        endMovePreview: () -> Unit,
-        onMove: (String) -> Unit,
-        onPromotionRequested: (String) -> Unit,
-        modifier: Modifier = Modifier,
-    ) {
-        var offset by remember { mutableStateOf(Offset.Zero) }
-        var isDragging by remember { mutableStateOf(false) }
-
-        Box(
-            modifier =
-                modifier
-                    .zIndex(if (isDragging) 1f else 0f)
-                    .offset {
-                        val pxSize = squareSize.toPx()
-                        IntOffset(
-                            (pxSize * square.displayCol(playerColor) + offset.x).roundToInt(),
-                            (pxSize * square.displayRow(playerColor) + offset.y).roundToInt(),
-                        )
-                    }.pointerInput(square, legalMoves) {
-                        detectDragGestures(
-                            onDragStart = {
-                                isDragging = true
-                                startMovePreview(square)
-                            },
-                            onDrag = { change, dragAmount ->
-                                change.consume()
-                                offset += dragAmount
-                            },
-                            onDragEnd = {
-                                isDragging = false
-                                val pxSize = squareSize.toPx()
-                                val colMove = (offset.x / pxSize).roundToInt()
-                                val rowMove = (offset.y / pxSize).roundToInt()
-
-                                val targetSquare =
-                                    ChessSquare.fromDisplay(
-                                        square.displayCol(playerColor) + colMove,
-                                        square.displayRow(playerColor) + rowMove,
-                                        playerColor,
-                                    )
-
-                                // TODO find a better way of detecting promotion, so I don't need to check all moves
-                                val possibleMoves = legalMoves.filter { it.to == targetSquare }
-
-                                if (possibleMoves.size > 1) {
-                                    onPromotionRequested(square.name + targetSquare.name)
-                                } else if (possibleMoves.isNotEmpty()) {
-                                    onMove(possibleMoves.first().uci)
-                                }
-
-                                offset = Offset.Zero
-                                endMovePreview()
-                            },
-                            onDragCancel = {
-                                isDragging = false
-                                offset = Offset.Zero
-                                endMovePreview()
-                            },
-                        )
-                    }.drawBehind {
-                        val color = if (piece.color == PlayerColor.WHITE) Color.Black else Color.White
-                        drawCircle(
-                            brush =
-                                Brush.radialGradient(
-                                    0.25f to color.copy(alpha = 0.5f),
-                                    0.75f to color.copy(alpha = 0.1f),
-                                    1.0f to Color.Transparent,
-                                ),
-                        )
-                    },
-        ) {
-            Icon(
-                modifier =
-                    Modifier
-                        .align(Alignment.Center)
-                        .fillMaxSize(0.8f),
-                painter = painterResource(piece.getIcon()),
-                contentDescription = piece.toString(),
-                tint = if (piece.color == PlayerColor.WHITE) Color.White else Color.Black,
-            )
         }
     }
 }
 
-private fun ChessPieceType.toPromotionString(): String =
-    when (this) {
-        ChessPieceType.PAWN, ChessPieceType.KING -> ""
-        ChessPieceType.KNIGHT -> "n"
-        ChessPieceType.BISHOP -> "b"
-        ChessPieceType.ROOK -> "r"
-        ChessPieceType.QUEEN -> "q"
-    }
-
-private fun ChessSquare.displayCol(boardRotation: PlayerColor): Int = if (boardRotation == PlayerColor.WHITE) colIndex else 7 - colIndex
-
-private fun ChessSquare.displayRow(boardRotation: PlayerColor): Int = if (boardRotation == PlayerColor.WHITE) 7 - rowIndex else rowIndex
-
 @Composable
-private fun PromotionDialog(
-    baseMoveUci: String,
-    onMoveSelected: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Select Promotion Piece") },
-        text = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-            ) {
-                listOf(ChessPieceType.QUEEN, ChessPieceType.ROOK, ChessPieceType.BISHOP, ChessPieceType.KNIGHT)
-                    .forEach { pieceType ->
-                        IconButton(onClick = { onMoveSelected(baseMoveUci + pieceType.toPromotionString()) }) {
-                            Image(
-                                painter = painterResource(pieceType.getIcon()),
-                                contentDescription = pieceType.toString(),
-                                modifier = Modifier.size(48.dp),
-                                colorFilter = ColorFilter.tint(Color.Black),
-                            )
-                        }
-                    }
-            }
-        },
-        confirmButton = {},
-    )
-}
-
-@Composable
-private fun GameOverDialog(
+private fun GameOverPrompt(
     gameResult: ChessGameResult,
-    onDismiss: () -> Unit,
+    onBackToMenu: () -> Unit,
 ) {
-    val title =
-        when (gameResult) {
-            is ChessGameResult.Win -> {
-                val winner =
-                    gameResult.winner.name
-                        .lowercase()
-                        .replaceFirstChar { it.uppercase() }
-                "$winner wins!"
-            }
-            is ChessGameResult.Draw -> "Draw"
-            else -> "Game Over"
-        }
-
-    val message =
-        when (gameResult) {
-            is ChessGameResult.Win -> "Checkmate"
-            ChessGameResult.Draw.Stalemate -> "Stalemate"
-            ChessGameResult.Draw.ThreefoldRepetition -> "Threefold Repetition"
-            ChessGameResult.Draw.FiftyMoveRule -> "Fifty-move Rule"
-            ChessGameResult.Draw.InsufficientMaterial -> "Insufficient Material"
-            else -> ""
-        }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = { Text(message) },
-        confirmButton = { },
-    )
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(gameResult) { visible = gameResult.isOver }
+    if (visible) {
+        GameOverDialog(gameResult, onBackToMenu, onDismiss = { visible = false })
+    }
 }
+
+@Composable
+private fun RotateBoardButton(
+    rotation: PlayerColor,
+    onClick: () -> Unit,
+) {
+    val angle by animateFloatAsState(if (rotation == PlayerColor.WHITE) 0f else 180f)
+    IconButton(onClick = onClick) {
+        Icon(painterResource(Res.drawable.screen_rotation_alt), contentDescription = "Rotate board", Modifier.rotate(angle))
+    }
+}
+
+private fun PlayerColor.opposite(): PlayerColor = if (this == PlayerColor.WHITE) PlayerColor.BLACK else PlayerColor.WHITE

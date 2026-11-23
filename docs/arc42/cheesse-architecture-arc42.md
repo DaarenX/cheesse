@@ -24,12 +24,16 @@ Cheesse is a modern, cross-platform multiplayer chess application built on Kotli
   - Verified move updates are broadcast to both clients instantly as FEN snapshots.
 
 - **Interactive Chessboard UI**:
-  - Drag-and-drop piece manipulation with responsive pixel-to-board coordinate mapping.
-  - Move target indicator dots (circular previews for silent moves, larger rings for captures).
+  - Drag-and-drop piece manipulation with responsive pixel-to-board coordinate mapping; rejected drops spring back to their square.
+  - Move target indicators that pop in on pick-up (dots for silent moves, rings for captures).
+  - Highlights for the last move, the picked-up piece and a king in check.
+  - Animated moves: the opponent's last move (including the castling rook) glides from its origin square.
+  - Player bars showing each side's captured pieces, material lead and an animated turn indicator.
   - Manual board perspective rotation (rotate board 180° for White or Black perspective).
   - Pawn promotion piece selection dialog (Queen, Rook, Bishop, Knight).
   - Game over dialog announcing outcome (Checkmate with winner, Stalemate, Threefold repetition, Fifty-move rule, Insufficient material).
   - Configurable server URL in application settings with dynamic client reconnection.
+  - Cheese-themed design system with light and dark mode and a bundled Nunito font (see ADR-008).
 
 ---
 
@@ -220,7 +224,7 @@ The solution strategy describes the fundamental decisions, architectural styles,
 | Cross-Platform Consistency | **Kotlin Multiplatform (KMP) & Compose Multiplatform** | Enables sharing 100% of network DTOs, serialization logic, and chess business rules in `:shared`, as well as shared UI layouts and ViewModels in `:composeApp` across Desktop, Web, Android, and iOS. Eliminates code duplication across client platforms. |
 | High Concurrency & Low Latency | **Spring Boot WebFlux & Spring Data R2DBC** | Traditional servlet containers allocate one thread per connection, which degrades under hundreds of long-lived WebSockets. WebFlux event-loop processing (Project Reactor) handles thousands of concurrent WebSocket connections and reactive PostgreSQL queries with minimal thread allocation. |
 | Real-Time Bidirectional Streaming | **WebSockets via Ktor & Spring WebFlux** | HTTP polling incurs unacceptable latency and payload overhead for fast-paced chess matches. WebSockets offer sub-millisecond framing and immediate full-duplex transmission for move updates and match start notifications. |
-| Modular Presentation Architecture | **Voyager ScreenModel & Material 3** | Voyager provides a lightweight, lifecycle-aware navigation abstraction tailored for Compose Multiplatform. ViewModels (`ScreenModel`) decouple business state management from UI rendering. |
+| Modular Presentation Architecture | **Voyager ScreenModel & Material 3** | Voyager provides a lightweight, lifecycle-aware navigation abstraction tailored for Compose Multiplatform. ViewModels (`ScreenModel`) decouple business state management from UI rendering. A custom Material 3 theme (`CheesseTheme`) and shared components give every target the same look (ADR-008). |
 | Cheat Resistance & Game Integrity | **Server-Authoritative Validation via `ChessEngineAdapter`** | Move legality, turn alternation, and board representation are verified authoritatively on the backend. Clients are never trusted with game rules; client-side move generation serves purely for interactive preview and drag responsiveness. |
 
 ---
@@ -334,7 +338,7 @@ graph TD
 The `:shared` module provides the shared contracts, engine abstraction, and domain models between clients and backend:
 
 - **`xyz.daaren.cheesse.Constants`**: Defines global constants such as default `SERVER_PORT = 8080` and `DEFAULT_FEN`.
-- **`xyz.daaren.cheesse.domain.chess.ChessEngineAdapter`**: Multiplatform interface and implementation (`DefaultChessEngineAdapter`) encapsulating `chess-core` operations (`applyMove`, `activePlayerColor`, `getBoardState`). `applyMove` and `getBoardState` take a `ChessGameHistory` (start FEN + UCI moves) and replay it, so draw rules that depend on earlier positions (threefold repetition) are evaluated. Moves after the game has ended are rejected with `ChessMoveResult.GameOver`.
+- **`xyz.daaren.cheesse.domain.chess.ChessEngineAdapter`**: Multiplatform interface and implementation (`DefaultChessEngineAdapter`) encapsulating `chess-core` operations (`applyMove`, `activePlayerColor`, `getBoardState`). `applyMove` and `getBoardState` take a `ChessGameHistory` (start FEN + UCI moves) and replay it, so draw rules that depend on earlier positions (threefold repetition) are evaluated. Moves after the game has ended are rejected with `ChessMoveResult.GameOver`. `getBoardState` also reports the last move and, when the side to move is in check, its king's square (used for board highlights).
 - **`xyz.daaren.cheesse.domain.chess.ChessModels`**: Clean domain types (`ChessPiece`, `ChessPieceType`, `ChessSquare`, `ChessMove`, `ChessGameResult`, `ChessBoardState`, `ChessMoveResult`) isolating presentation layers from third-party engine classes.
 - **`xyz.daaren.cheesse.api.GameRequests`**:
   - `CreateGameRequest`: Encapsulates host color preference (`WHITE`, `BLACK`, `RANDOM`).
@@ -423,9 +427,18 @@ graph TD
 ```
 
 - **Screens**:
-  - `HomeScreen`: Displays menu options (local game, new online game dialog, join game dialog, settings button, waiting lobby display).
-  - `GameScreen`: Renders the chessboard canvas, coordinate labels, piece icons, drag gestures, move target indicators, and promotion/game-over dialogs.
+  - `HomeScreen` (`ui/menu/`): Hero with logo, action card (local game, create online game, join with token, settings), the create/join dialogs (`HomeDialogs.kt`), the waiting lobby (`LobbyCard.kt`), and errors as a snackbar.
+  - `GameScreen` (`ui/game/`): Lays out the board between two `PlayerBar`s (portrait) or beside them (landscape, `GameLayout.kt`), and shows the promotion and game-over dialogs (`GameDialogs.kt`).
   - `SettingsScreen`: Allows users to configure and persist the backend server URL.
+- **Board** (`ui/game/board/`):
+  - `Chessboard`: Orchestrates selection, drops and promotion; holds only UI state.
+  - `BoardBackground` / `BoardCoordinates`: Canvas drawing of squares, highlights (last move, selection, check) and labels.
+  - `BoardPiece` / `PieceGlyph`: Draggable, animated pieces drawn as outlined glyphs.
+  - `MoveHints`: Animated dots and capture rings.
+  - Pure helpers with tests: `BoardGeometry` (square offsets, castling rook origins), `DropDecision` (`resolveDrop`), `BoardDrops` (`piecePlacements`), and `CapturedMaterial` in `ui/game/`.
+- **Design system**:
+  - `ui/theme/`: `CheesseTheme`, light/dark color schemes, Nunito typography, shapes, `BoardColors` (`LocalBoardColors`) and `Motion` specs.
+  - `ui/components/`: `CheesseButton`, `CheesseCard`, `CheesseDialog`, `CheesseTopBar`, `SegmentedChoice`, `PulsingDot`, `CheeseHolesBackground`.
 - **ScreenModels**:
   - `HomeScreenModel`: Manages lobby state, token inputs, waiting room status, and navigation events.
   - `GameScreenModel`: Manages the interactive chessboard state, move legality calculation, turn enforcement, and piece capture diffing.
@@ -837,6 +850,19 @@ The client UI is powered by Voyager `ScreenModel`:
 
 ---
 
+## 8.5.1 UI Design System
+
+All client styling goes through the Cheesse design system (ADR-008):
+
+1. **Tokens, not literals**: Screens read colors from `MaterialTheme.colorScheme` and board colors from `CheesseTheme.boardColors`. Hex values live only in `ui/theme/Color.kt` and `BoardColors.kt`.
+2. **Dark mode**: `CheesseTheme` follows `isSystemInDarkTheme()` and swaps both the Material color scheme and the `BoardColors`.
+3. **Typography**: Nunito is bundled in `composeResources/font` (license in `composeResources/files/nunito_OFL.txt`), so all targets render identical text.
+4. **Motion**: Animations use the shared specs in `Motion` (piece moves, snap-back, button press, dialog entrance, color changes). Screen changes slide and fade, with the direction following Voyager's push/pop.
+5. **Components**: Screens use the components in `ui/components/` instead of styling Material widgets inline.
+6. **Engine data for highlights**: The last move and the checked king's square come from `ChessBoardState.lastMove` / `checkedKingSquare`, computed by `DefaultChessEngineAdapter`. The UI never inspects the engine directly.
+
+---
+
 ## 8.6 Persistence & Schema Evolution
 
 Database persistence is handled by Spring Data R2DBC against a single normalized table:
@@ -973,6 +999,24 @@ This section records significant architectural decisions (ADRs) made in Cheesse,
   - *Positive*: Backwards-compatible protocol: older clients ignore the new fields, and newer clients fall back to the FEN when talking to an older server.
   - *Negative*: Each engine call replays the game (see R-05), and `ServerMessage.Move` grows with game length.
   - *Negative*: Games already in progress at migration time only count repetitions from their position at migration; `chess-core`'s PGN generation assumes the standard start position.
+
+---
+
+## ADR-008: Use a Custom Cheesse Design System on Material 3 with a Bundled Font
+
+- **Status**: Proposed
+- **Date**: 2026-11-20
+- **Context**: The client used the bare default `MaterialTheme`, with no dark mode and colors hardcoded in each screen (chess.com-style green board, black/white tints). Text used each platform's system font, so Android, iOS, desktop and web looked different (QS-06). The app had no visual identity beyond its cheese-crown logo.
+- **Options Considered**:
+  1. Keep the default Material theme and fix hardcoded colors locally: no new code, but no identity and no parity of typography.
+  2. Use a third-party design system or UI kit: fast, but generic, and it adds a dependency that must support all four KMP targets.
+  3. Build a small design system on top of Material 3: custom color schemes, typography, shapes and motion tokens in `ui/theme`, reusable components in `ui/components`, and a bundled OFL font (Nunito) in `composeResources/font`.
+- **Decision**: Use option 3. `CheesseTheme` provides light and dark color schemes derived from the logo (following `isSystemInDarkTheme()`), Nunito typography, rounded shapes, and board colors through `LocalBoardColors`. Shared animation specs live in `Motion`. Screens use `CheesseButton`, `CheesseCard`, `CheesseDialog`, `SegmentedChoice` and the other components instead of styling Material widgets inline.
+- **Consequences**:
+  - *Positive*: Consistent look, typography and motion on every target, and dark mode support.
+  - *Positive*: Colors and timings are changed in one place, and screens contain less styling code.
+  - *Negative*: The four Nunito weights add roughly 530 KB to every client bundle (most noticeable for the web build).
+  - *Negative*: Custom components must be kept in step with Material 3 updates.
 # 10. Quality Requirements
 
 This section details the quality tree and concrete quality scenarios evaluating how Cheesse satisfies its primary non-functional requirements.

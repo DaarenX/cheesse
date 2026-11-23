@@ -4,4 +4,12 @@ html, body {
     margin: 0;
     padding: 0;
     overflow: hidden;
+    /* Matches the Cheesse theme background, so there is no white flash while Wasm loads. */
+    background-color: #FFF8E7;
+}
+
+@media (prefers-color-scheme: dark) {
+    html, body {
+        background-color: #17120D;
+    }
 }
